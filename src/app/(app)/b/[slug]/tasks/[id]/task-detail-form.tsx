@@ -1,0 +1,164 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { updateTaskDetails } from "@/lib/actions/task-actions";
+import { TASK_KINDS, TASK_PRIORITIES, type TaskKind, type TaskPriority } from "@/models/types";
+
+type Member = { id: string; name: string; email: string };
+
+type Task = {
+  id: string;
+  title: string;
+  description: string;
+  kind: string;
+  priority: string;
+  assignedToId: string;
+  dueAt: string;
+};
+
+export function TaskDetailForm({
+  brandSlug,
+  task,
+  members,
+}: {
+  brandSlug: string;
+  task: Task;
+  members: Member[];
+}) {
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description);
+  const [kind, setKind] = useState<TaskKind>(task.kind as TaskKind);
+  const [priority, setPriority] = useState<TaskPriority>(task.priority as TaskPriority);
+  const [assignedToId, setAssignedToId] = useState<string>(task.assignedToId);
+  const [dueAt, setDueAt] = useState<string>(task.dueAt);
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<string | null>(null);
+
+  return (
+    <form
+      className="space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setMsg(null);
+        start(async () => {
+          await updateTaskDetails({
+            brandSlug,
+            taskId: task.id,
+            title,
+            description,
+            kind,
+            priority,
+            assignedToId: assignedToId || null,
+            dueAt: dueAt || null,
+          });
+          setMsg("Saved.");
+        });
+      }}
+    >
+      <Field label="Title">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm"
+        />
+      </Field>
+
+      <Field label="Description">
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={6}
+          placeholder="What's involved? Any links, files, or context."
+          className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm"
+        />
+      </Field>
+
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <SelectField label="Kind" value={kind} onChange={(v) => setKind(v as TaskKind)} options={TASK_KINDS} />
+        <SelectField label="Priority" value={priority} onChange={(v) => setPriority(v as TaskPriority)} options={TASK_PRIORITIES} />
+        <div>
+          <label className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+            Assignee
+          </label>
+          <select
+            value={assignedToId}
+            onChange={(e) => setAssignedToId(e.target.value)}
+            className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-2 py-2 text-sm"
+          >
+            <option value="">Unassigned</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+            Due
+          </label>
+          <input
+            type="datetime-local"
+            value={dueAt}
+            onChange={(e) => setDueAt(e.target.value)}
+            className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-2 py-2 text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 pt-2">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-md bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm px-4 py-2"
+        >
+          {pending ? "Saving…" : "Save"}
+        </button>
+        {msg && <span className="text-xs text-emerald-400">{msg}</span>}
+      </div>
+    </form>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly string[];
+}) {
+  return (
+    <div>
+      <label className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+        {label}
+      </label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-2 py-2 text-sm capitalize"
+      >
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o.replace("_", " ")}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}

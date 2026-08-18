@@ -1,0 +1,172 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getBrandBySlug } from "@/lib/brands";
+import { connectDb } from "@/lib/mongoose";
+import { Task, TaskComment, User } from "@/models";
+import { listBrandMembers } from "@/lib/actions/task-actions";
+import { PageHeader, Card, Pill } from "@/components/primitives";
+import { formatDistanceToNowStrict, format } from "date-fns";
+import { TaskDetailForm } from "./task-detail-form";
+import { TaskStatusMenu } from "../task-status-menu";
+import { TaskComments } from "./task-comments";
+import { DeleteTaskButton } from "./delete-task-button";
+import type { TaskStatus } from "@/models/types";
+
+export default async function TaskDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string; id: string }>;
+}) {
+  const { slug, id } = await params;
+  const brand = await getBrandBySlug(slug);
+  await connectDb();
+
+  const task = await Task.findOne({ _id: id, brandId: brand._id }).lean();
+  if (!task) notFound();
+
+  const [members, comments, creator, assignee] = await Promise.all([
+    listBrandMembers(slug),
+    TaskComment.find({ taskId: task._id }).sort({ createdAt: 1 }).lean(),
+    task.createdById ? User.findById(task.createdById).lean() : null,
+    task.assignedToId ? User.findById(task.assignedToId).lean() : null,
+  ]);
+
+  const commentsWithAuthor = await Promise.all(
+    comments.map(async (c) => {
+      const u = await User.findById(c.authorId).lean();
+      return {
+        id: String(c._id),
+        body: c.body,
+        createdAt: c.createdAt,
+        author: u ? { name: u.name ?? u.email, email: u.email } : null,
+      };
+    })
+  );
+
+  const dueLocalValue = task.dueAt
+    ? format(new Date(task.dueAt), "yyyy-MM-dd'T'HH:mm")
+    : "";
+
+  return (
+    <div>
+      <PageHeader title={task.title} subtitle={`${brand.name} · Task`}>
+        <Link href={`/b/${slug}/tasks`} className="text-sm text-neutral-400 hover:text-white">
+          ← Back to tasks
+        </Link>
+      </PageHeader>
+
+      <div className="p-8 grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <TaskDetailForm
+              brandSlug={slug}
+              task={{
+                id: String(task._id),
+                title: task.title,
+                description: task.description ?? "",
+                kind: task.kind,
+                priority: task.priority,
+                assignedToId: task.assignedToId ? String(task.assignedToId) : "",
+                dueAt: dueLocalValue,
+              }}
+              members={members}
+            />
+          </Card>
+
+          <Card>
+            <h2 className="text-sm uppercase tracking-wide text-neutral-500 mb-4">
+              Comments
+            </h2>
+            <TaskComments
+              brandSlug={slug}
+              taskId={String(task._id)}
+              comments={commentsWithAuthor.map((c) => ({
+                ...c,
+                createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString(),
+              }))}
+            />
+          </Card>
+        </div>
+
+        <aside className="space-y-4">
+          <Card>
+            <h3 className="text-sm uppercase tracking-wide text-neutral-500 mb-3">
+              Status
+            </h3>
+            <TaskStatusMenu
+              brandSlug={slug}
+              taskId={String(task._id)}
+              current={task.status as TaskStatus}
+            />
+          </Card>
+
+          <Card>
+            <h3 className="text-sm uppercase tracking-wide text-neutral-500 mb-3">
+              Details
+            </h3>
+            <dl className="space-y-2 text-sm">
+              <Row label="Kind">
+                <Pill>{task.kind}</Pill>
+              </Row>
+              <Row label="Priority">
+                <Pill
+                  tone={
+                    task.priority === "urgent"
+                      ? "red"
+                      : task.priority === "high"
+                      ? "amber"
+                      : task.priority === "low"
+                      ? "neutral"
+                      : "blue"
+                  }
+                >
+                  {task.priority}
+                </Pill>
+              </Row>
+              <Row label="Assignee">
+                <span className="text-neutral-300">
+                  {assignee?.name ?? assignee?.email ?? "Unassigned"}
+                </span>
+              </Row>
+              <Row label="Created by">
+                <span className="text-neutral-400">
+                  {creator?.name ?? creator?.email ?? "—"}
+                </span>
+              </Row>
+              <Row label="Created">
+                <span className="text-neutral-400">
+                  {task.createdAt
+                    ? formatDistanceToNowStrict(new Date(task.createdAt), { addSuffix: true })
+                    : "—"}
+                </span>
+              </Row>
+              {task.dueAt && (
+                <Row label="Due">
+                  <span className="text-neutral-300">
+                    {format(new Date(task.dueAt), "d MMM yyyy · HH:mm")}
+                  </span>
+                </Row>
+              )}
+            </dl>
+          </Card>
+
+          <Card>
+            <h3 className="text-sm uppercase tracking-wide text-red-400/70 mb-3">
+              Danger zone
+            </h3>
+            <DeleteTaskButton brandSlug={slug} taskId={String(task._id)} />
+          </Card>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <dt className="text-xs text-neutral-500">{label}</dt>
+      <dd className="text-right">{children}</dd>
+    </div>
+  );
+}
