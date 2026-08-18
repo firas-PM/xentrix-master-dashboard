@@ -12,29 +12,30 @@ export async function credentialsSignInAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const from = String(formData.get("from") ?? "/") || "/";
+  console.log("[signIn] start", { email, from });
+
   try {
-    await signIn("credentials", {
-      email,
-      password,
-      redirectTo: from,
-    });
+    await signIn("credentials", { email, password, redirect: false });
+    console.log("[signIn] ok");
   } catch (error) {
-    // NextAuth throws AuthError on invalid credentials. On success, it
-    // internally throws a NEXT_REDIRECT sentinel that we must let bubble.
+    console.error("[signIn] error", error);
     if (error instanceof AuthError) {
       redirect(`/login?error=CredentialsSignin&from=${encodeURIComponent(from)}`);
     }
     throw error;
   }
+
+  redirect(from);
 }
 
 export async function magicLinkSignInAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const from = String(formData.get("from") ?? "/") || "/";
+
   try {
     await signIn("nodemailer", {
       email,
-      redirectTo: from,
+      redirect: false,
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -42,4 +43,6 @@ export async function magicLinkSignInAction(formData: FormData) {
     }
     throw error;
   }
+
+  redirect("/login/check-email");
 }
