@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
-import { auth, signIn } from "@/auth";
+import { auth } from "@/auth";
+import {
+  credentialsSignInAction,
+  magicLinkSignInAction,
+} from "@/lib/actions/auth-actions";
 
 export default async function LoginPage({
   searchParams,
@@ -11,6 +15,8 @@ export default async function LoginPage({
   if (session?.user) redirect(params.from ?? "/");
 
   const magicLinkEnabled = Boolean(process.env.RESEND_API_KEY);
+  const from = params.from ?? "/";
+  const errorMsg = errorMessageFor(params.error);
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
@@ -25,17 +31,9 @@ export default async function LoginPage({
           </div>
         </div>
 
-        <form
-          action={async (formData: FormData) => {
-            "use server";
-            await signIn("credentials", {
-              email: String(formData.get("email") ?? "").trim(),
-              password: String(formData.get("password") ?? ""),
-              redirectTo: params.from ?? "/",
-            });
-          }}
-          className="space-y-4"
-        >
+        <form action={credentialsSignInAction} className="space-y-4">
+          <input type="hidden" name="from" value={from} />
+
           <label className="block">
             <span className="text-xs uppercase tracking-wide text-neutral-400">Email</span>
             <input
@@ -58,11 +56,7 @@ export default async function LoginPage({
             />
           </label>
 
-          {params.error ? (
-            <p className="text-sm text-red-400">
-              Wrong email or password. Try again.
-            </p>
-          ) : null}
+          {errorMsg && <p className="text-sm text-red-400">{errorMsg}</p>}
 
           <button
             type="submit"
@@ -80,16 +74,8 @@ export default async function LoginPage({
               <div className="flex-1 h-px bg-neutral-900" />
             </div>
 
-            <form
-              action={async (formData: FormData) => {
-                "use server";
-                await signIn("nodemailer", {
-                  email: String(formData.get("email") ?? "").trim(),
-                  redirectTo: params.from ?? "/",
-                });
-              }}
-              className="space-y-3"
-            >
+            <form action={magicLinkSignInAction} className="space-y-3">
+              <input type="hidden" name="from" value={from} />
               <label className="block">
                 <span className="text-xs uppercase tracking-wide text-neutral-400">
                   Or get a magic link
@@ -118,4 +104,17 @@ export default async function LoginPage({
       </div>
     </main>
   );
+}
+
+function errorMessageFor(code?: string) {
+  if (!code) return null;
+  switch (code) {
+    case "CredentialsSignin":
+    case "CallbackRouteError":
+      return "Wrong email or password. Try again.";
+    case "EmailSignin":
+      return "Couldn't send the login email. Check the address and try again.";
+    default:
+      return "Something went wrong. Try again.";
+  }
 }
