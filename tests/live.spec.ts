@@ -131,7 +131,9 @@ test.describe("authenticated flow", () => {
 
     // ---------------- SETTINGS / ACCOUNT ----------------
     await page.goto("/settings/account");
-    await expect(page.getByRole("heading", { name: /account/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /^account$/i })
+    ).toBeVisible();
 
     // ---------------- SIGN OUT ----------------
     await page.getByRole("button", { name: /sign out/i }).click();
