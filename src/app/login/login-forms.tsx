@@ -58,6 +58,15 @@ export function LoginForms({ from, errorMsg, magicLinkEnabled }: Props) {
 
         {errorMsg && <p className="text-sm text-[var(--danger)]">{errorMsg}</p>}
 
+        <div className="text-right">
+          <a
+            href="/login/forgot"
+            className="text-[11px] text-[var(--text-muted)] hover:text-[var(--text)] transition"
+          >
+            Forgot your password?
+          </a>
+        </div>
+
         <button
           type="submit"
           disabled={disabled}
