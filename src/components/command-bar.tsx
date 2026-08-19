@@ -12,6 +12,8 @@ import Link from "next/link";
 import { Search, PlusCircle, ListTodo, FolderKanban, Building2 } from "lucide-react";
 import { globalSearch, type SearchHit } from "@/lib/actions/search-actions";
 import { createTask } from "@/lib/actions/task-actions";
+import { ParseHints, DateChips } from "@/components/task-create-widgets";
+import { parseTaskTitle } from "@/lib/task-parse";
 
 type BrandOpt = { slug: string; name: string };
 
@@ -270,6 +272,7 @@ function CapturePanel({
   const [priority, setPriority] = useState<"low" | "normal" | "high" | "urgent">(
     "normal"
   );
+  const [dueAt, setDueAt] = useState("");
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -294,11 +297,19 @@ function CapturePanel({
         setError(null);
         start(async () => {
           try {
+            const parsed = parseTaskTitle(title);
             await createTask({
               brandSlug,
-              title: title.trim(),
-              priority,
-              kind: "ops",
+              title: parsed.cleanTitle || title.trim(),
+              priority: parsed.priority ?? priority,
+              kind: parsed.kind ?? "ops",
+              assigneeToken: parsed.assigneeToken ?? undefined,
+              projectSlug: parsed.projectSlug ?? undefined,
+              dueAt: parsed.dueAt
+                ? parsed.dueAt.toISOString()
+                : dueAt
+                  ? new Date(dueAt).toISOString()
+                  : undefined,
             });
             router.push(`/b/${brandSlug}/tasks`);
             onClose();
@@ -317,9 +328,14 @@ function CapturePanel({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          placeholder="Send follow-up to client, ship the migration…"
+          placeholder="Send follow-up @wendy #onboarding !urgent by tomorrow"
           className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
         />
+        <ParseHints title={title} />
+        <p className="text-[10px] text-[var(--text-subtle)] mt-1">
+          Tip: <code>@name</code> assigns · <code>#slug</code> links a project ·{" "}
+          <code>!urgent</code> sets priority · <code>by tomorrow</code> / <code>by +3d</code> sets due date
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -355,6 +371,30 @@ function CapturePanel({
             <option value="high">high</option>
             <option value="urgent">urgent</option>
           </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
+          Due date (or use chips below / say "by tomorrow" in the title)
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="datetime-local"
+            value={dueAt}
+            onChange={(e) => setDueAt(e.target.value)}
+            className="rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+          />
+          <DateChips onPick={setDueAt} />
+          {dueAt && (
+            <button
+              type="button"
+              onClick={() => setDueAt("")}
+              className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text)] transition"
+            >
+              clear
+            </button>
+          )}
         </div>
       </div>
 

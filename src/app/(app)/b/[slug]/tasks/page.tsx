@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Types } from "mongoose";
 import { getBrandBySlug } from "@/lib/brands";
 import { connectDb } from "@/lib/mongoose";
-import { Task } from "@/models";
+import { Task, Project } from "@/models";
 import { PageHeader, Pill, Card, EmptyState } from "@/components/primitives";
 import { NewTaskForm } from "./new-task-form";
 import { TaskStatusMenu } from "./task-status-menu";
@@ -55,9 +55,12 @@ export default async function TasksPage({
     filter.title = { $regex: escapeRegex(sp.q.trim()), $options: "i" };
   }
 
-  const [allTasks, members] = await Promise.all([
+  const [allTasks, members, projects] = await Promise.all([
     Task.find(filter).sort({ priority: -1, updatedAt: -1 }).lean(),
     listBrandMembers(slug),
+    Project.find({ brandId: brand._id, archivedAt: null }, { slug: 1, name: 1 })
+      .sort({ name: 1 })
+      .lean(),
   ]);
 
   const grouped: Record<TaskStatus, typeof allTasks> = {
@@ -80,7 +83,15 @@ export default async function TasksPage({
 
       <div className="p-6 lg:p-8 space-y-6">
         <Card>
-          <NewTaskForm brandSlug={slug} members={members} />
+          <NewTaskForm
+            brandSlug={slug}
+            members={members}
+            projects={projects.map((p) => ({
+              id: String(p._id),
+              slug: p.slug,
+              name: p.name,
+            }))}
+          />
         </Card>
 
         <Card>

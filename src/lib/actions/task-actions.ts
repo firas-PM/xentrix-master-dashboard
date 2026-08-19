@@ -4,7 +4,15 @@ import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { connectDb } from "@/lib/mongoose";
-import { Task, Brand, Membership, TaskComment, User, Notification } from "@/models";
+import {
+  Task,
+  Brand,
+  Membership,
+  TaskComment,
+  User,
+  Notification,
+  Project,
+} from "@/models";
 import { requireBrandAccess } from "@/lib/access";
 import { TASK_KINDS, TASK_PRIORITIES, TASK_STATUSES } from "@/models/types";
 import { brandStatsTag, founderOverviewTag } from "@/lib/queries";
@@ -22,12 +30,24 @@ const createSchema = z.object({
   kind: z.enum(TASK_KINDS).default("ops"),
   priority: z.enum(TASK_PRIORITIES).default("normal"),
   assignedToId: z.string().optional().nullable(),
+  /** Fallback: a name/email token to resolve against brand members. */
+  assigneeToken: z.string().max(60).optional().nullable(),
   dueAt: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
+  description: z.string().max(20000).optional().nullable(),
   projectId: z.string().optional().nullable(),
+  /** Fallback: a project slug within this brand. */
+  projectSlug: z.string().max(60).optional().nullable(),
+  estimateMinutes: z
+    .number()
+    .int()
+    .min(0)
+    .max(60 * 24 * 30)
+    .optional()
+    .nullable(),
+  parentTaskId: z.string().optional().nullable(),
 });
 
-export async function createTask(input: unknown) {
+export async function createTask(input: unknown): Promise<{ id: string }> {
   const parsed = createSchema.parse(input);
   const { session } = await requireBrandAccess(parsed.brandSlug);
 
@@ -35,15 +55,55 @@ export async function createTask(input: unknown) {
   const brand = await Brand.findOne({ slug: parsed.brandSlug }).lean();
   if (!brand) throw new Error("Brand not found");
 
+  // Resolve assigneeToken (from ⌘⇧K parse) → member userId
+  let assignedToId = parsed.assignedToId || null;
+  if (!assignedToId && parsed.assigneeToken) {
+    const token = parsed.assigneeToken.toLowerCase();
+    const memberships = await Membership.find({ brandId: brand._id })
+      .populate("userId")
+      .lean();
+    for (const m of memberships) {
+      const u = m.userId as unknown as {
+        _id: { toString(): string };
+        name?: string;
+        email: string;
+      } | null;
+      if (!u) continue;
+      const nameSlug = (u.name ?? u.email.split("@")[0])
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+      const emailLocal = u.email.split("@")[0].toLowerCase();
+      if (token === nameSlug || token === emailLocal) {
+        assignedToId = String(u._id);
+        break;
+      }
+    }
+  }
+
+  // Resolve projectSlug → projectId
+  let projectId = parsed.projectId || null;
+  if (!projectId && parsed.projectSlug) {
+    const proj = await Project.findOne({
+      brandId: brand._id,
+      slug: parsed.projectSlug,
+    }).lean();
+    if (proj) projectId = String(proj._id);
+  }
+
   const created = await Task.create({
     brandId: brand._id,
     title: parsed.title,
     kind: parsed.kind,
     priority: parsed.priority,
     description: parsed.description || undefined,
-    assignedToId: parsed.assignedToId || undefined,
-    projectId: parsed.projectId || undefined,
+    assignedToId: assignedToId || undefined,
+    projectId: projectId || undefined,
+    parentTaskId: parsed.parentTaskId || undefined,
     dueAt: parsed.dueAt ? new Date(parsed.dueAt) : undefined,
+    estimateMinutes:
+      parsed.estimateMinutes && parsed.estimateMinutes > 0
+        ? parsed.estimateMinutes
+        : undefined,
     createdById: session.user.id,
   });
 
@@ -61,6 +121,8 @@ export async function createTask(input: unknown) {
   revalidatePath(`/b/${parsed.brandSlug}`);
   revalidatePath(`/b/${parsed.brandSlug}/tasks`);
   revalidatePath("/");
+
+  return { id: String(created._id) };
 }
 
 const updateStatusSchema = z.object({
