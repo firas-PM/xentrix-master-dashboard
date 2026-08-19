@@ -315,6 +315,94 @@ export async function getMyOpenTasks(userId: string): Promise<MyTaskRow[]> {
   });
 }
 
+export type UtilizationRow = {
+  userId: string;
+  name: string;
+  email: string;
+  open: number;
+  overdue: number;
+  done7d: number;
+};
+
+export async function getBrandUtilization(
+  brandId: Types.ObjectId | string
+): Promise<UtilizationRow[]> {
+  await connectDb();
+  const oid = typeof brandId === "string" ? new Types.ObjectId(brandId) : brandId;
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const rows = await Task.aggregate([
+    { $match: { brandId: oid, assignedToId: { $ne: null } } },
+    {
+      $group: {
+        _id: "$assignedToId",
+        open: {
+          $sum: {
+            $cond: [
+              { $in: ["$status", ["todo", "in_progress", "in_review", "blocked"]] },
+              1,
+              0,
+            ],
+          },
+        },
+        overdue: {
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $in: ["$status", ["todo", "in_progress", "in_review", "blocked"]] },
+                  { $ne: ["$dueAt", null] },
+                  { $lt: ["$dueAt", now] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+        done7d: {
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $eq: ["$status", "done"] },
+                  { $gte: ["$completedAt", weekAgo] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    { $unwind: "$user" },
+    {
+      $project: {
+        _id: 0,
+        userId: { $toString: "$_id" },
+        name: { $ifNull: ["$user.name", "$user.email"] },
+        email: "$user.email",
+        open: 1,
+        overdue: 1,
+        done7d: 1,
+      },
+    },
+    { $sort: { open: -1 } },
+  ]);
+
+  return rows as UtilizationRow[];
+}
+
 export type BrandActivityRow = {
   _id: string;
   kind: string;

@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { connectDb } from "@/lib/mongoose";
 import { RecurringTaskTemplate, Task, Brand } from "@/models";
+import { sendFounderDigest } from "@/lib/digest";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 // Vercel Cron will hit this endpoint with `Authorization: Bearer <CRON_SECRET>`.
 // We also allow manual trigger for testing when CRON_SECRET is unset in dev.
@@ -75,7 +77,21 @@ export async function GET(req: Request) {
     });
   }
 
-  return NextResponse.json({ ok: true, created });
+  // Monday piggyback: send the founder weekly digest. Hobby plan can only
+  // run daily crons, so we detect the day here rather than adding a second
+  // cron entry to vercel.json.
+  let digest: Awaited<ReturnType<typeof sendFounderDigest>> | { skipped: string } = {
+    skipped: "not monday",
+  };
+  if (now.getUTCDay() === 1) {
+    try {
+      digest = await sendFounderDigest();
+    } catch (err) {
+      digest = { skipped: err instanceof Error ? err.message : "digest failed" };
+    }
+  }
+
+  return NextResponse.json({ ok: true, created, digest });
 }
 
 /**

@@ -5,6 +5,7 @@ import { connectDb } from "@/lib/mongoose";
 import { Brand } from "@/models";
 import { getFounderOverview } from "@/lib/queries";
 import { PageHeader, StatTile, Card, EmptyState } from "@/components/primitives";
+import { SendDigestButton } from "./send-digest-button";
 
 export default async function HomePage() {
   const session = await requireSession();
@@ -40,7 +41,9 @@ export default async function HomePage() {
       <PageHeader
         title="All brands"
         subtitle="Founder overview — live workload across every brand."
-      />
+      >
+        <SendDigestButton />
+      </PageHeader>
 
       <div className="p-8 space-y-8">
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
