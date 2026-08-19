@@ -23,6 +23,28 @@
   --warn: #8a5a00;
 }
 
+/* Xentrix dark theme — canonical near-black + gold. */
+html[data-theme="dark"] {
+  --bg: #111111;
+  --bg-elevated: #1a1a1a;
+  --bg-sunken: #1e1b14;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  --text: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.72);
+  --text-subtle: rgba(255, 255, 255, 0.5);
+
+  --accent: #ffc801;
+  --accent-hover: #ffd93a;
+  --accent-ink: #111111;
+
+  --danger: #ff6b6b;
+  --success: #4ade80;
+  --warn: #fbbf24;
+}
+
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--text);
@@ -49,5 +71,5 @@ body {
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: rgba(17, 17, 17, 0.12); border-radius: 6px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(17, 17, 17, 0.24); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }

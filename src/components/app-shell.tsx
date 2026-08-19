@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { SessionMembership } from "@/auth";
 import {
   LayoutDashboard,
@@ -16,10 +16,13 @@ import {
   Repeat,
   BarChart3,
   Receipt,
+  Menu,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth-actions";
 import { CommandBar } from "@/components/command-bar";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type Props = {
   user: { name?: string | null; email?: string | null; isFounder: boolean };
@@ -35,9 +38,50 @@ export function AppShell({ user, memberships, captureBrands, children }: Props) 
     return m ? m[1] : undefined;
   }, [pathname]);
 
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close drawer whenever route changes.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   return (
     <div className="flex min-h-screen">
-      <aside className="w-64 shrink-0 border-r border-[var(--border)] bg-[var(--bg-elevated)] flex flex-col">
+      {/* Mobile top bar */}
+      <header className="md:hidden fixed inset-x-0 top-0 z-30 flex items-center gap-3 h-14 px-4 border-b border-[var(--border)] bg-[var(--bg-elevated)]">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+          className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-sunken)] transition"
+        >
+          <Menu className="size-5" />
+        </button>
+        <XentrixMark className="h-6 w-auto" />
+        <div className="text-sm font-semibold tracking-tight flex-1 min-w-0 truncate">
+          Xentrix
+        </div>
+        <ThemeToggle />
+      </header>
+
+      {/* Mobile overlay + drawer */}
+      {mobileOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/40"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      <aside
+        className={cn(
+          "flex flex-col border-r border-[var(--border)] bg-[var(--bg-elevated)]",
+          // Desktop: static column
+          "md:static md:w-64 md:shrink-0 md:translate-x-0",
+          // Mobile: fixed drawer
+          "fixed z-50 inset-y-0 left-0 w-72 transform transition-transform duration-200",
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+      >
         <div className="px-5 py-5 border-b border-[var(--border)]">
           <div className="flex items-center gap-3">
             <XentrixMark className="h-8 w-auto" />
@@ -47,7 +91,16 @@ export function AppShell({ user, memberships, captureBrands, children }: Props) 
                 Master Dashboard
               </div>
             </div>
-            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-[var(--border-strong)] text-[var(--text-muted)]">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => setMobileOpen(false)}
+              aria-label="Close menu"
+              className="md:hidden p-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-sunken)] transition"
+            >
+              <X className="size-4" />
+            </button>
+            <kbd className="hidden md:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded border border-[var(--border-strong)] text-[var(--text-muted)]">
               ⌘K
             </kbd>
           </div>
@@ -59,11 +112,7 @@ export function AppShell({ user, memberships, captureBrands, children }: Props) 
             My work
           </NavItem>
           {user.isFounder && (
-            <NavItem
-              href="/"
-              icon={LayoutDashboard}
-              active={pathname === "/"}
-            >
+            <NavItem href="/" icon={LayoutDashboard} active={pathname === "/"}>
               All brands
             </NavItem>
           )}
@@ -189,7 +238,7 @@ export function AppShell({ user, memberships, captureBrands, children }: Props) 
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0 bg-[var(--bg)]">{children}</main>
+      <main className="flex-1 min-w-0 bg-[var(--bg)] pt-14 md:pt-0">{children}</main>
       <CommandBar brands={captureBrands} />
     </div>
   );
@@ -246,7 +295,7 @@ function NavItem({
 
 /**
  * Actual Xentrix logo — X letterform + gold triangle apex.
- * Never render as plain styled text.
+ * X path uses currentColor so it inverts correctly on dark theme.
  */
 function XentrixMark({ className }: { className?: string }) {
   return (
@@ -258,7 +307,7 @@ function XentrixMark({ className }: { className?: string }) {
     >
       <path
         d="M129.912 221.819L8.62251 59.1134H61.0761L157.361 190.684L253.933 59.1134H306.386L185.096 221.819L315.009 397.868H262.412L157.361 252.667L52.5973 397.868H0L129.912 221.819Z"
-        fill="#111111"
+        fill="currentColor"
       />
       <path d="M56.4774 0H258.388L157.504 139.031L56.4774 0Z" fill="#FFC800" />
     </svg>
