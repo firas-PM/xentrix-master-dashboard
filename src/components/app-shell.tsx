@@ -16,14 +16,16 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth-actions";
+import { CommandBar } from "@/components/command-bar";
 
 type Props = {
   user: { name?: string | null; email?: string | null; isFounder: boolean };
   memberships: SessionMembership[];
+  captureBrands: { slug: string; name: string }[];
   children: React.ReactNode;
 };
 
-export function AppShell({ user, memberships, children }: Props) {
+export function AppShell({ user, memberships, captureBrands, children }: Props) {
   const pathname = usePathname();
   const activeBrandSlug = useMemo(() => {
     const m = pathname.match(/^\/b\/([^/]+)/);
@@ -36,12 +38,15 @@ export function AppShell({ user, memberships, children }: Props) {
         <div className="px-5 py-5 border-b border-[var(--border)]">
           <div className="flex items-center gap-3">
             <XentrixMark className="h-8 w-auto" />
-            <div className="leading-tight">
+            <div className="leading-tight flex-1 min-w-0">
               <div className="text-sm font-semibold tracking-tight">Xentrix</div>
               <div className="text-[11px] uppercase tracking-wider text-[var(--text-subtle)]">
                 Master Dashboard
               </div>
             </div>
+            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-[var(--border-strong)] text-[var(--text-muted)]">
+              ⌘K
+            </kbd>
           </div>
         </div>
 
@@ -161,6 +166,7 @@ export function AppShell({ user, memberships, children }: Props) {
       </aside>
 
       <main className="flex-1 min-w-0 bg-[var(--bg)]">{children}</main>
+      <CommandBar brands={captureBrands} />
     </div>
   );
 }

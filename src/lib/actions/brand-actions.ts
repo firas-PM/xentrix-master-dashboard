@@ -6,7 +6,7 @@ import { connectDb } from "@/lib/mongoose";
 import { Brand } from "@/models";
 import { requireFounder } from "@/lib/access";
 import { BRAND_SECTORS } from "@/models/types";
-import { brandStatsTag, founderOverviewTag } from "@/lib/queries";
+import { brandStatsTag, founderOverviewTag, brandListTag } from "@/lib/queries";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -56,6 +56,7 @@ export async function createBrand(input: unknown): Promise<CreateBrandResult> {
 
   updateTag(founderOverviewTag);
   updateTag(brandStatsTag);
+  updateTag(brandListTag);
   revalidatePath("/admin/brands");
   revalidatePath("/");
   return { ok: true, slug };
@@ -70,6 +71,7 @@ export async function archiveBrand(input: unknown) {
   await Brand.updateOne({ slug: parsed.slug }, { $set: { archivedAt: new Date() } });
   updateTag(founderOverviewTag);
   updateTag(brandStatsTag);
+  updateTag(brandListTag);
   revalidatePath("/admin/brands");
   revalidatePath("/");
 }
@@ -81,6 +83,7 @@ export async function restoreBrand(input: unknown) {
   await Brand.updateOne({ slug: parsed.slug }, { $set: { archivedAt: null } });
   updateTag(founderOverviewTag);
   updateTag(brandStatsTag);
+  updateTag(brandListTag);
   revalidatePath("/admin/brands");
   revalidatePath("/");
 }
@@ -120,6 +123,7 @@ export async function updateBrand(input: unknown): Promise<UpdateBrandResult> {
   );
   updateTag(founderOverviewTag);
   updateTag(brandStatsTag);
+  updateTag(brandListTag);
   revalidatePath("/admin/brands");
   revalidatePath(`/admin/brands/${parsed.data.slug}`);
   revalidatePath(`/b/${parsed.data.slug}`);

@@ -5,6 +5,22 @@ import { Task, Project, Brand, ActivityEvent } from "@/models";
 
 export const brandStatsTag = "brand-stats";
 export const founderOverviewTag = "founder-overview";
+export const brandListTag = "brand-list";
+
+export type BrandListEntry = { slug: string; name: string };
+
+/** Non-archived brand slugs+names for founder-level quick-capture / search. */
+export const listAllBrands = unstable_cache(
+  async (): Promise<BrandListEntry[]> => {
+    await connectDb();
+    const rows = await Brand.find({ archivedAt: null }, { slug: 1, name: 1 })
+      .sort({ name: 1 })
+      .lean();
+    return rows.map((b) => ({ slug: b.slug, name: b.name }));
+  },
+  ["brand-list"],
+  { revalidate: 300, tags: [brandListTag] }
+);
 
 const OPEN_STATUSES = ["todo", "in_progress", "in_review", "blocked"] as const;
 
