@@ -18,6 +18,7 @@ import {
   Receipt,
   Menu,
   X,
+  Sliders,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth-actions";
@@ -39,6 +40,14 @@ export function AppShell({ user, memberships, captureBrands, children }: Props) 
   }, [pathname]);
 
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Whether the current user can see "Brand settings" for the active brand.
+  const canAdminActive = useMemo(() => {
+    if (!activeBrandSlug) return false;
+    if (user.isFounder) return true;
+    const m = memberships.find((x) => x.brandSlug === activeBrandSlug);
+    return m ? m.role === "brand_admin" || m.role === "founder" : false;
+  }, [activeBrandSlug, memberships, user.isFounder]);
 
   // Close drawer whenever route changes.
   useEffect(() => {
@@ -182,6 +191,15 @@ export function AppShell({ user, memberships, captureBrands, children }: Props) 
               >
                 Invoices
               </NavItem>
+              {canAdminActive && (
+                <NavItem
+                  href={`/b/${activeBrandSlug}/settings`}
+                  icon={Sliders}
+                  active={pathname.startsWith(`/b/${activeBrandSlug}/settings`)}
+                >
+                  Brand settings
+                </NavItem>
+              )}
             </>
           )}
 

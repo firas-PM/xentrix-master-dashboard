@@ -4,7 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { connectDb } from "@/lib/mongoose";
 import { Brand } from "@/models";
-import { requireFounder } from "@/lib/access";
+import { requireFounder, requireBrandAdmin } from "@/lib/access";
 import { BRAND_SECTORS } from "@/models/types";
 import { brandStatsTag, founderOverviewTag, brandListTag } from "@/lib/queries";
 
@@ -107,7 +107,9 @@ export async function updateBrand(input: unknown): Promise<UpdateBrandResult> {
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
-  await requireFounder();
+  // Brand admins can edit their own brand's basic settings; only founders
+  // can create / archive / delete brands.
+  await requireBrandAdmin(parsed.data.slug);
   await connectDb();
   await Brand.updateOne(
     { slug: parsed.data.slug },

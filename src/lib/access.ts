@@ -65,3 +65,25 @@ export async function canManageBrand(slug: string): Promise<boolean> {
   const m = session.user.memberships.find((x) => x.brandSlug === slug);
   return m ? hasRoleAtLeast(m.role, "manager") : false;
 }
+
+/**
+ * Brand-admin capabilities: manage members + edit brand settings of the
+ * brand they own. Distinct from managing tasks/projects/invoices (which
+ * managers can also do).
+ */
+export async function canAdminBrand(slug: string): Promise<boolean> {
+  const session = await requireSession();
+  if (session.user.isFounder) return true;
+  const m = session.user.memberships.find((x) => x.brandSlug === slug);
+  return m ? hasRoleAtLeast(m.role, "brand_admin") : false;
+}
+
+export async function requireBrandAdmin(slug: string) {
+  const session = await requireSession();
+  if (session.user.isFounder) return { session, isFounder: true as const };
+  const m = session.user.memberships.find((x) => x.brandSlug === slug);
+  if (!m || !hasRoleAtLeast(m.role, "brand_admin")) {
+    redirect(`/b/${slug}`);
+  }
+  return { session, isFounder: false as const };
+}

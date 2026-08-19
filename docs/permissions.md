@@ -69,6 +69,14 @@ founder     = 4  (system-wide flag on the User, not a brand membership)
 | Delete own time entry | ✅ own only | ✅ own only | ✅ own only | ✅ any |
 | **Delete a task** (Danger zone) | ❌ | ✅ | ✅ | ✅ |
 
+### People ops for this brand (brand-admin-and-up gate)
+
+| Action | Worker | Manager | Brand Admin | Founder |
+|---|:---:|:---:|:---:|:---:|
+| See "Brand settings" nav item | ❌ | ❌ | ✅ | ✅ |
+| Edit brand name / sector / color / description / timezone | ❌ | ❌ | ✅ | ✅ |
+| Add / re-role / remove members of this brand (from `/team`) | ❌ | ❌ | ✅ | ✅ |
+
 ### Projects, recurring, invoices (manager-and-up gate)
 
 | Action | Worker | Manager | Brand Admin | Founder |
