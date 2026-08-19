@@ -14,7 +14,7 @@ export default async function AccountSettingsPage() {
       <PageHeader title="Account" subtitle="Your profile and password." />
       <div className="p-8 max-w-2xl space-y-6">
         <Card>
-          <h2 className="text-sm uppercase tracking-wide text-neutral-500 mb-4">Profile</h2>
+          <h2 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-4">Profile</h2>
           <AccountForms
             initialName={user?.name ?? ""}
             email={user?.email ?? session.user.email ?? ""}

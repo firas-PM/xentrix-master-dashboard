@@ -60,7 +60,7 @@ export function NewUserForm({ brands }: { brands: BrandOpt[] }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm"
+            className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
           />
         </Field>
         <Field label="Email">
@@ -69,7 +69,7 @@ export function NewUserForm({ brands }: { brands: BrandOpt[] }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm"
+            className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
           />
         </Field>
         <Field label="Initial password">
@@ -79,12 +79,12 @@ export function NewUserForm({ brands }: { brands: BrandOpt[] }) {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
-              className="flex-1 rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm font-mono"
+              className="flex-1 rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
             />
             <button
               type="button"
               onClick={() => setPassword(randomPassword())}
-              className="rounded-md border border-neutral-800 hover:border-neutral-600 text-xs px-3"
+              className="rounded-md border border-[var(--border-strong)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-sunken)] text-xs px-3"
             >
               Regenerate
             </button>
@@ -96,20 +96,20 @@ export function NewUserForm({ brands }: { brands: BrandOpt[] }) {
               type="checkbox"
               checked={isFounder}
               onChange={(e) => setIsFounder(e.target.checked)}
-              className="accent-indigo-500"
+              className="accent-[color:var(--accent)]"
             />
             Founder (sees every brand)
           </label>
         </Field>
       </div>
 
-      <div className="border-t border-neutral-900 pt-4">
+      <div className="border-t border-[var(--border)] pt-4">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="text-sm uppercase tracking-wide text-neutral-500">
+            <h3 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)]">
               Brand access
             </h3>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-[var(--text-subtle)] mt-1">
               {isFounder
                 ? "Founders see every brand — this list is optional."
                 : "Add at least one brand or the user won't see anything."}
@@ -120,7 +120,7 @@ export function NewUserForm({ brands }: { brands: BrandOpt[] }) {
             onClick={() =>
               setRows((r) => [...r, { brandSlug: brands[0]?.slug ?? "", role: "worker" }])
             }
-            className="rounded-md border border-neutral-800 hover:border-neutral-600 text-xs px-3 py-1.5"
+            className="rounded-md border border-[var(--border-strong)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-sunken)] text-xs font-medium px-3 py-1.5 transition"
           >
             + Add brand
           </button>
@@ -128,14 +128,14 @@ export function NewUserForm({ brands }: { brands: BrandOpt[] }) {
 
         <div className="space-y-2">
           {rows.length === 0 && (
-            <div className="text-xs text-neutral-600 border border-dashed border-neutral-900 rounded-md py-6 text-center">
+            <div className="text-xs text-[var(--text-subtle)] border border-dashed border-[var(--border-strong)] bg-[var(--bg-sunken)] rounded-md py-6 text-center">
               No brand access yet.
             </div>
           )}
           {rows.map((r, i) => (
             <div key={i} className="flex gap-2 items-end">
               <div className="flex-1">
-                <label className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+                <label className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
                   Brand
                 </label>
                 <select
@@ -145,7 +145,7 @@ export function NewUserForm({ brands }: { brands: BrandOpt[] }) {
                       prev.map((row, idx) => (idx === i ? { ...row, brandSlug: e.target.value } : row))
                     )
                   }
-                  className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-2 py-2 text-sm"
+                  className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                 >
                   {brands.map((b) => (
                     <option key={b.slug} value={b.slug}>
@@ -155,7 +155,7 @@ export function NewUserForm({ brands }: { brands: BrandOpt[] }) {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+                <label className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
                   Role
                 </label>
                 <select
@@ -167,7 +167,7 @@ export function NewUserForm({ brands }: { brands: BrandOpt[] }) {
                       )
                     )
                   }
-                  className="rounded-md bg-neutral-900 border border-neutral-800 px-2 py-2 text-sm capitalize"
+                  className="rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-2 text-sm capitalize focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>
@@ -179,7 +179,7 @@ export function NewUserForm({ brands }: { brands: BrandOpt[] }) {
               <button
                 type="button"
                 onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))}
-                className="text-neutral-400 hover:text-red-400 text-sm px-2 py-2"
+                className="text-[var(--text-muted)] hover:text-[var(--danger)] text-sm px-2 py-2 transition"
                 aria-label="Remove"
               >
                 ×
@@ -193,12 +193,12 @@ export function NewUserForm({ brands }: { brands: BrandOpt[] }) {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm px-4 py-2"
+          className="rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50 text-[var(--accent-ink)] text-sm font-semibold px-4 py-2 transition"
         >
           {pending ? "Creating…" : "Create user"}
         </button>
         {msg && (
-          <span className={msg.ok ? "text-xs text-emerald-400" : "text-xs text-red-400"}>
+          <span className={msg.ok ? "text-xs text-[var(--success)]" : "text-xs text-[var(--danger)]"}>
             {msg.text}
           </span>
         )}
@@ -210,7 +210,7 @@ export function NewUserForm({ brands }: { brands: BrandOpt[] }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+      <span className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
         {label}
       </span>
       {children}

@@ -26,23 +26,23 @@ export function TaskComments({
   return (
     <div className="space-y-4">
       {comments.length === 0 && (
-        <p className="text-xs text-neutral-500">No comments yet.</p>
+        <p className="text-xs text-[var(--text-subtle)]">No comments yet.</p>
       )}
 
       <ul className="space-y-3">
         {comments.map((c) => (
           <li key={c.id} className="flex gap-3">
-            <div className="h-7 w-7 shrink-0 rounded-full bg-neutral-800 grid place-items-center text-[10px] uppercase">
+            <div className="h-7 w-7 shrink-0 rounded-full bg-[var(--bg-sunken)] border border-[var(--border)] grid place-items-center text-[10px] uppercase font-semibold text-[var(--text-muted)]">
               {(c.author?.name ?? "??").slice(0, 2)}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm font-medium">{c.author?.name ?? "Unknown"}</span>
-                <span className="text-[10px] text-neutral-500">
+                <span className="text-[10px] text-[var(--text-subtle)]">
                   {formatDistanceToNowStrict(new Date(c.createdAt), { addSuffix: true })}
                 </span>
               </div>
-              <p className="text-sm text-neutral-300 whitespace-pre-wrap mt-0.5">
+              <p className="text-sm text-[var(--text)] whitespace-pre-wrap mt-0.5">
                 {c.body}
               </p>
             </div>
@@ -51,7 +51,7 @@ export function TaskComments({
       </ul>
 
       <form
-        className="pt-2 border-t border-neutral-900 space-y-2"
+        className="pt-2 border-t border-[var(--border)] space-y-2"
         onSubmit={(e) => {
           e.preventDefault();
           const val = body.trim();
@@ -67,13 +67,13 @@ export function TaskComments({
           onChange={(e) => setBody(e.target.value)}
           rows={3}
           placeholder="Write a comment…"
-          className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm"
+          className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
         />
         <div className="flex justify-end">
           <button
             type="submit"
             disabled={pending || !body.trim()}
-            className="rounded-md bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm px-4 py-2"
+            className="rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50 text-[var(--accent-ink)] text-sm font-semibold px-4 py-2 transition"
           >
             {pending ? "Posting…" : "Comment"}
           </button>

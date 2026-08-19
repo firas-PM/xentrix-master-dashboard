@@ -48,7 +48,7 @@ export default async function BrandLandingPage({
       >
         <Link
           href={`/b/${brand.slug}/tasks?new=1`}
-          className="rounded-md bg-indigo-500 hover:bg-indigo-400 text-white text-sm px-3 py-1.5"
+          className="rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-ink)] text-sm font-semibold px-3 py-1.5 transition"
         >
           New task
         </Link>
@@ -68,12 +68,12 @@ export default async function BrandLandingPage({
 
         <section>
           <div className="flex items-baseline justify-between mb-3">
-            <h2 className="text-sm uppercase tracking-wide text-neutral-500">
+            <h2 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)]">
               Recent activity
             </h2>
             <Link
               href={`/b/${brand.slug}/tasks`}
-              className="text-xs text-neutral-400 hover:text-white"
+              className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition"
             >
               See all tasks →
             </Link>
@@ -90,7 +90,7 @@ export default async function BrandLandingPage({
                   <StatusPill status={t.status} />
                   <div className="min-w-0 flex-1">
                     <div className="text-sm truncate">{t.title}</div>
-                    <div className="text-[11px] text-neutral-500 mt-0.5 flex items-center gap-2">
+                    <div className="text-[11px] text-[var(--text-subtle)] mt-0.5 flex items-center gap-2">
                       <span className="capitalize">{t.kind}</span>
                       {t.dueAt && <span>· due {formatDistanceToNowStrict(new Date(t.dueAt), { addSuffix: true })}</span>}
                     </div>
@@ -104,12 +104,12 @@ export default async function BrandLandingPage({
 
         <section>
           <div className="flex items-baseline justify-between mb-3">
-            <h2 className="text-sm uppercase tracking-wide text-neutral-500">
+            <h2 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)]">
               Active projects
             </h2>
             <Link
               href={`/b/${brand.slug}/projects`}
-              className="text-xs text-neutral-400 hover:text-white"
+              className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition"
             >
               See all projects →
             </Link>
@@ -124,13 +124,13 @@ export default async function BrandLandingPage({
                     <div className="text-sm font-medium truncate">{p.name}</div>
                     <Pill tone={stageTone(p.stage)}>{p.stage.replace("_", " ")}</Pill>
                   </div>
-                  <div className="h-1.5 rounded-full bg-neutral-900 overflow-hidden">
+                  <div className="h-1.5 rounded-full bg-[var(--bg-sunken)] overflow-hidden">
                     <div
-                      className="h-full bg-indigo-500"
+                      className="h-full bg-[var(--accent)]"
                       style={{ width: `${Math.min(100, Math.max(0, p.progress))}%` }}
                     />
                   </div>
-                  <div className="text-[11px] text-neutral-500 mt-2">{p.progress}%</div>
+                  <div className="text-[11px] text-[var(--text-subtle)] mt-2">{p.progress}%</div>
                 </Card>
               ))}
             </div>

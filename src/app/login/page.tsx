@@ -16,25 +16,42 @@ export default async function LoginPage({
   const errorMsg = errorMessageFor(params.error);
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4">
+    <main className="min-h-screen flex items-center justify-center px-4 bg-[var(--bg)]">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center gap-3">
-          <div className="h-8 w-8 rounded-md bg-indigo-500/20 border border-indigo-500/40 grid place-items-center text-indigo-300 text-sm font-semibold">
-            X
-          </div>
+          <XentrixMark className="h-10 w-auto" />
           <div>
-            <div className="text-sm text-neutral-400">Xentrix</div>
-            <div className="text-base font-medium">Master Dashboard</div>
+            <div className="text-[11px] uppercase tracking-wider text-[var(--text-subtle)] font-semibold">
+              Xentrix
+            </div>
+            <div className="text-base font-semibold">Master Dashboard</div>
           </div>
         </div>
 
         <LoginForms from={from} errorMsg={errorMsg} magicLinkEnabled={magicLinkEnabled} />
 
-        <p className="text-xs text-neutral-500 text-center pt-6">
+        <p className="text-xs text-[var(--text-subtle)] text-center pt-6">
           Access is invite-only. Ask your brand admin.
         </p>
       </div>
     </main>
+  );
+}
+
+function XentrixMark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 315 398"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-label="Xentrix"
+    >
+      <path
+        d="M129.912 221.819L8.62251 59.1134H61.0761L157.361 190.684L253.933 59.1134H306.386L185.096 221.819L315.009 397.868H262.412L157.361 252.667L52.5973 397.868H0L129.912 221.819Z"
+        fill="#111111"
+      />
+      <path d="M56.4774 0H258.388L157.504 139.031L56.4774 0Z" fill="#FFC800" />
+    </svg>
   );
 }
 

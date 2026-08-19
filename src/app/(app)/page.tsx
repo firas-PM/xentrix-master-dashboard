@@ -69,7 +69,7 @@ export default async function HomePage() {
         </div>
 
         <div>
-          <h2 className="text-sm uppercase tracking-wide text-neutral-500 mb-3">
+          <h2 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-3">
             Per brand
           </h2>
 
@@ -82,7 +82,7 @@ export default async function HomePage() {
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {perBrand.map(({ brand, open, overdue, projects }) => (
                 <Link key={String(brand._id)} href={`/b/${brand.slug}`}>
-                  <Card className="hover:border-neutral-700 transition">
+                  <Card className="hover:border-[var(--border-strong)] transition">
                     <div className="flex items-center gap-3 mb-3">
                       <div
                         className="h-8 w-8 rounded-md grid place-items-center text-sm font-semibold"
@@ -96,7 +96,7 @@ export default async function HomePage() {
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-medium truncate">{brand.name}</div>
-                        <div className="text-[11px] text-neutral-500 capitalize">
+                        <div className="text-[11px] text-[var(--text-subtle)] capitalize">
                           {brand.sector.replace("_", " ")}
                         </div>
                       </div>
@@ -127,11 +127,11 @@ function MiniStat({
   tone?: "neutral" | "red";
 }) {
   return (
-    <div className="flex flex-col items-center py-2 rounded-md bg-neutral-900/60">
-      <div className={tone === "red" ? "text-red-300 text-lg font-semibold" : "text-lg font-semibold"}>
+    <div className="flex flex-col items-center py-2 rounded-md bg-[var(--bg-sunken)]">
+      <div className={tone === "red" ? "text-[var(--danger)] text-lg font-bold" : "text-lg font-bold"}>
         {value}
       </div>
-      <div className="text-[10px] uppercase tracking-wide text-neutral-500">{label}</div>
+      <div className="text-[10px] uppercase tracking-wide text-[var(--text-subtle)]">{label}</div>
     </div>
   );
 }

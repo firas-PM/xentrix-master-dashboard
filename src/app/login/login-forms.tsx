@@ -35,33 +35,33 @@ export function LoginForms({ from, errorMsg, magicLinkEnabled }: Props) {
         <input type="hidden" name="callbackUrl" value={from} />
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-neutral-400">Email</span>
+          <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)]">Email</span>
           <input
             name="email"
             type="email"
             required
             autoComplete="email"
-            className="mt-1 w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
             placeholder="you@xentrix.xyz"
           />
         </label>
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-neutral-400">Password</span>
+          <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)]">Password</span>
           <input
             name="password"
             type="password"
             required
             autoComplete="current-password"
-            className="mt-1 w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
           />
         </label>
 
-        {errorMsg && <p className="text-sm text-red-400">{errorMsg}</p>}
+        {errorMsg && <p className="text-sm text-[var(--danger)]">{errorMsg}</p>}
 
         <button
           type="submit"
           disabled={disabled}
-          className="w-full rounded-md bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm font-medium py-2 transition"
+          className="w-full rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50 text-[var(--accent-ink)] text-sm font-semibold py-2 transition"
         >
           {disabled ? "Loading…" : "Sign in"}
         </button>
@@ -69,10 +69,10 @@ export function LoginForms({ from, errorMsg, magicLinkEnabled }: Props) {
 
       {magicLinkEnabled && (
         <>
-          <div className="flex items-center gap-3 my-6 text-[10px] uppercase tracking-widest text-neutral-600">
-            <div className="flex-1 h-px bg-neutral-900" />
+          <div className="flex items-center gap-3 my-6 text-[10px] uppercase tracking-widest text-[var(--text-subtle)] font-semibold">
+            <div className="flex-1 h-px bg-[var(--border)]" />
             or
-            <div className="flex-1 h-px bg-neutral-900" />
+            <div className="flex-1 h-px bg-[var(--border)]" />
           </div>
 
           <form
@@ -83,21 +83,21 @@ export function LoginForms({ from, errorMsg, magicLinkEnabled }: Props) {
             <input type="hidden" name="csrfToken" value={csrfToken} />
             <input type="hidden" name="callbackUrl" value={from} />
             <label className="block">
-              <span className="text-xs uppercase tracking-wide text-neutral-400">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)]">
                 Or get a magic link
               </span>
               <input
                 name="email"
                 type="email"
                 required
-                className="mt-1 w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="mt-1 w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
                 placeholder="you@xentrix.xyz"
               />
             </label>
             <button
               type="submit"
               disabled={disabled}
-              className="w-full rounded-md border border-neutral-800 hover:border-neutral-600 disabled:opacity-50 text-neutral-300 text-sm font-medium py-2 transition"
+              className="w-full rounded-md border border-[var(--border-strong)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-sunken)] disabled:opacity-50 text-[var(--text)] text-sm font-medium py-2 transition"
             >
               Email me a login link
             </button>

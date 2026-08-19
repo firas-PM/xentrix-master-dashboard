@@ -31,30 +31,30 @@ export function AccountForms({ initialName, email }: { initialName: string; emai
           <input
             value={email}
             disabled
-            className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm text-neutral-500"
+            className="w-full rounded-md bg-[var(--bg-sunken)] border border-[var(--border-strong)] px-3 py-2 text-sm text-[var(--text-subtle)]"
           />
         </Field>
         <Field label="Display name">
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm"
+            className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
           />
         </Field>
         <div className="flex items-center gap-3">
           <button
             type="submit"
             disabled={pending}
-            className="rounded-md bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm px-4 py-2"
+            className="rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50 text-[var(--accent-ink)] text-sm font-semibold px-4 py-2 transition"
           >
             {pending ? "Saving…" : "Save profile"}
           </button>
-          {profileMsg && <span className="text-xs text-emerald-400">{profileMsg}</span>}
+          {profileMsg && <span className="text-xs text-[var(--success)]">{profileMsg}</span>}
         </div>
       </form>
 
-      <div className="border-t border-neutral-900 pt-6">
-        <h3 className="text-sm uppercase tracking-wide text-neutral-500 mb-4">
+      <div className="border-t border-[var(--border)] pt-6">
+        <h3 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-4">
           Change password
         </h3>
         <form
@@ -82,7 +82,7 @@ export function AccountForms({ initialName, email }: { initialName: string; emai
               onChange={(e) => setCur(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm"
+              className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
             />
           </Field>
           <Field label="New password">
@@ -93,7 +93,7 @@ export function AccountForms({ initialName, email }: { initialName: string; emai
               required
               minLength={8}
               autoComplete="new-password"
-              className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm"
+              className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
             />
           </Field>
           <Field label="Confirm new password">
@@ -104,19 +104,19 @@ export function AccountForms({ initialName, email }: { initialName: string; emai
               required
               minLength={8}
               autoComplete="new-password"
-              className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm"
+              className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
             />
           </Field>
           <div className="flex items-center gap-3">
             <button
               type="submit"
               disabled={pwPending}
-              className="rounded-md bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm px-4 py-2"
+              className="rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50 text-[var(--accent-ink)] text-sm font-semibold px-4 py-2 transition"
             >
               {pwPending ? "Updating…" : "Update password"}
             </button>
             {pwMsg && (
-              <span className={pwMsg.ok ? "text-xs text-emerald-400" : "text-xs text-red-400"}>
+              <span className={pwMsg.ok ? "text-xs text-[var(--success)]" : "text-xs text-[var(--danger)]"}>
                 {pwMsg.text}
               </span>
             )}
@@ -130,7 +130,7 @@ export function AccountForms({ initialName, email }: { initialName: string; emai
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+      <span className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
         {label}
       </span>
       {children}

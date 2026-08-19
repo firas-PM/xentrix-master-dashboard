@@ -22,7 +22,7 @@ export function DeleteTaskButton({
           await deleteTask({ brandSlug, taskId });
         });
       }}
-      className="w-full rounded-md border border-red-500/40 hover:border-red-500 bg-red-500/10 hover:bg-red-500/20 text-red-300 text-sm px-3 py-2 disabled:opacity-50"
+      className="w-full rounded-md border border-[var(--danger)]/40 hover:border-[var(--danger)] bg-[var(--danger)]/5 hover:bg-[var(--danger)]/10 text-[var(--danger)] text-sm font-medium px-3 py-2 disabled:opacity-50 transition"
     >
       {pending ? "Deleting…" : "Delete task"}
     </button>

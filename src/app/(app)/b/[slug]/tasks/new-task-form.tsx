@@ -47,7 +47,7 @@ export function NewTaskForm({
       }}
     >
       <div className="flex-1 min-w-[240px]">
-        <label className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+        <label className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
           New task
         </label>
         <input
@@ -55,7 +55,7 @@ export function NewTaskForm({
           onChange={(e) => setTitle(e.target.value)}
           required
           placeholder="What needs to happen?"
-          className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
         />
       </div>
 
@@ -63,13 +63,13 @@ export function NewTaskForm({
       <SelectField label="Priority" value={priority} onChange={(v) => setPriority(v as TaskPriority)} options={TASK_PRIORITIES} />
 
       <div>
-        <label className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+        <label className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
           Assignee
         </label>
         <select
           value={assignedToId}
           onChange={(e) => setAssignedToId(e.target.value)}
-          className="rounded-md bg-neutral-900 border border-neutral-800 px-2 py-2 text-sm"
+          className="rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-2 text-sm"
         >
           <option value="">Unassigned</option>
           {members.map((m) => (
@@ -81,26 +81,26 @@ export function NewTaskForm({
       </div>
 
       <div>
-        <label className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+        <label className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
           Due
         </label>
         <input
           type="datetime-local"
           value={dueAt}
           onChange={(e) => setDueAt(e.target.value)}
-          className="rounded-md bg-neutral-900 border border-neutral-800 px-2 py-2 text-sm"
+          className="rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-2 text-sm"
         />
       </div>
 
       <button
         type="submit"
         disabled={pending || title.trim().length === 0}
-        className="rounded-md bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm px-4 py-2"
+        className="rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50 text-[var(--accent-ink)] text-sm font-semibold px-4 py-2 transition"
       >
         {pending ? "Creating…" : "Add task"}
       </button>
 
-      {error && <span className="text-xs text-red-400 w-full">{error}</span>}
+      {error && <span className="text-xs text-[var(--danger)] w-full">{error}</span>}
     </form>
   );
 }
@@ -118,13 +118,13 @@ function SelectField({
 }) {
   return (
     <div>
-      <label className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+      <label className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
         {label}
       </label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md bg-neutral-900 border border-neutral-800 px-2 py-2 text-sm capitalize"
+        className="rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-2 text-sm capitalize"
       >
         {options.map((o) => (
           <option key={o} value={o}>

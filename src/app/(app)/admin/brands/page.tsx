@@ -37,13 +37,13 @@ export default async function AdminBrandsPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">{b.name}</div>
-                    <div className="text-[11px] text-neutral-500 capitalize">
+                    <div className="text-[11px] text-[var(--text-subtle)] capitalize">
                       {b.sector.replace("_", " ")} · {b.slug}
                     </div>
                   </div>
                 </div>
                 {b.description && (
-                  <p className="text-xs text-neutral-400 line-clamp-3">{b.description}</p>
+                  <p className="text-xs text-[var(--text-muted)] line-clamp-3">{b.description}</p>
                 )}
               </Card>
             ))}

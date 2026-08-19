@@ -60,29 +60,31 @@ export default async function TasksPage({
           {COLUMNS.map((col) => (
             <div key={col.key} className="space-y-2">
               <div className="flex items-center justify-between px-1">
-                <div className="text-xs uppercase tracking-wide text-neutral-500">
+                <div className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)]">
                   {col.label}
                 </div>
-                <div className="text-xs text-neutral-500">{grouped[col.key].length}</div>
+                <div className="text-xs text-[var(--text-subtle)] tabular-nums">
+                  {grouped[col.key].length}
+                </div>
               </div>
               {grouped[col.key].length === 0 ? (
-                <div className="rounded-md border border-dashed border-neutral-900 py-6 text-center text-[11px] text-neutral-600">
+                <div className="rounded-md border border-dashed border-[var(--border-strong)] bg-[var(--bg-sunken)] py-6 text-center text-[11px] text-[var(--text-subtle)]">
                   Empty
                 </div>
               ) : (
                 grouped[col.key].map((t) => (
                   <div
                     key={String(t._id)}
-                    className="rounded-md border border-neutral-900 bg-neutral-950 p-3 hover:border-neutral-700 transition"
+                    className="rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] p-3 hover:border-[var(--border-strong)] transition shadow-[0_1px_0_rgba(17,17,17,0.02)]"
                   >
-                    <Link href={`/b/${slug}/tasks/${String(t._id)}`} className="block text-sm hover:underline">
+                    <Link href={`/b/${slug}/tasks/${String(t._id)}`} className="block text-sm font-medium hover:underline">
                       {t.title}
                     </Link>
                     <div className="mt-2 flex items-center gap-2 flex-wrap">
                       <Pill tone={kindTone(t.kind)}>{t.kind}</Pill>
                       <Pill tone={priorityTone(t.priority)}>{t.priority}</Pill>
                       {t.dueAt && (
-                        <span className="text-[10px] text-neutral-500">
+                        <span className="text-[10px] text-[var(--text-subtle)]">
                           due {formatDistanceToNowStrict(new Date(t.dueAt), { addSuffix: true })}
                         </span>
                       )}

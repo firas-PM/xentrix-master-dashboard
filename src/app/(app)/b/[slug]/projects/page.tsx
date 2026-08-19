@@ -32,20 +32,20 @@ export default async function ProjectsPage({
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">{p.name}</div>
                     {p.description && (
-                      <div className="text-xs text-neutral-500 line-clamp-2 mt-0.5">
+                      <div className="text-xs text-[var(--text-subtle)] line-clamp-2 mt-0.5">
                         {p.description}
                       </div>
                     )}
                   </div>
-                  <Pill tone="blue">{p.stage.replace("_", " ")}</Pill>
+                  <Pill tone="gold">{p.stage.replace("_", " ")}</Pill>
                 </div>
-                <div className="h-1.5 rounded-full bg-neutral-900 overflow-hidden">
+                <div className="h-1.5 rounded-full bg-[var(--bg-sunken)] overflow-hidden">
                   <div
-                    className="h-full bg-indigo-500"
+                    className="h-full bg-[var(--accent)]"
                     style={{ width: `${Math.min(100, Math.max(0, p.progress))}%` }}
                   />
                 </div>
-                <div className="text-[11px] text-neutral-500 mt-2">
+                <div className="text-[11px] text-[var(--text-subtle)] mt-2">
                   {p.progress}% · {p.stage}
                 </div>
               </Card>

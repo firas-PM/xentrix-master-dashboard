@@ -60,7 +60,7 @@ export function TaskDetailForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm"
+          className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
         />
       </Field>
 
@@ -70,7 +70,7 @@ export function TaskDetailForm({
           onChange={(e) => setDescription(e.target.value)}
           rows={6}
           placeholder="What's involved? Any links, files, or context."
-          className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm"
+          className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
         />
       </Field>
 
@@ -78,13 +78,13 @@ export function TaskDetailForm({
         <SelectField label="Kind" value={kind} onChange={(v) => setKind(v as TaskKind)} options={TASK_KINDS} />
         <SelectField label="Priority" value={priority} onChange={(v) => setPriority(v as TaskPriority)} options={TASK_PRIORITIES} />
         <div>
-          <label className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+          <label className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
             Assignee
           </label>
           <select
             value={assignedToId}
             onChange={(e) => setAssignedToId(e.target.value)}
-            className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-2 py-2 text-sm"
+            className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
           >
             <option value="">Unassigned</option>
             {members.map((m) => (
@@ -95,14 +95,14 @@ export function TaskDetailForm({
           </select>
         </div>
         <div>
-          <label className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+          <label className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
             Due
           </label>
           <input
             type="datetime-local"
             value={dueAt}
             onChange={(e) => setDueAt(e.target.value)}
-            className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-2 py-2 text-sm"
+            className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
           />
         </div>
       </div>
@@ -111,11 +111,11 @@ export function TaskDetailForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm px-4 py-2"
+          className="rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50 text-[var(--accent-ink)] text-sm font-semibold px-4 py-2 transition"
         >
           {pending ? "Saving…" : "Save"}
         </button>
-        {msg && <span className="text-xs text-emerald-400">{msg}</span>}
+        {msg && <span className="text-xs text-[var(--success)]">{msg}</span>}
       </div>
     </form>
   );
@@ -124,7 +124,7 @@ export function TaskDetailForm({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+      <span className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
         {label}
       </span>
       {children}
@@ -145,13 +145,13 @@ function SelectField({
 }) {
   return (
     <div>
-      <label className="block text-[10px] uppercase tracking-wide text-neutral-500 mb-1">
+      <label className="block text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-1">
         {label}
       </label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-2 py-2 text-sm capitalize"
+        className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-2 text-sm capitalize focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
       >
         {options.map((o) => (
           <option key={o} value={o}>

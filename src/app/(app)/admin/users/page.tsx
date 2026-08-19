@@ -26,7 +26,7 @@ export default async function AdminUsersPage() {
       <PageHeader title="Manage users" subtitle="Everyone across every brand">
         <Link
           href="/admin/users/new"
-          className="rounded-md bg-indigo-500 hover:bg-indigo-400 text-white text-sm px-3 py-1.5"
+          className="rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-ink)] text-sm font-semibold px-3 py-1.5 transition"
         >
           + New user
         </Link>
@@ -40,15 +40,15 @@ export default async function AdminUsersPage() {
               const mems = byUser.get(String(u._id)) ?? [];
               return (
                 <Card key={String(u._id)} className="flex items-center gap-3 py-3">
-                  <div className="h-8 w-8 rounded-full bg-neutral-800 grid place-items-center text-xs uppercase">
+                  <div className="h-8 w-8 rounded-full bg-[var(--bg-sunken)] border border-[var(--border)] grid place-items-center text-xs uppercase font-semibold text-[var(--text-muted)]">
                     {(u.name ?? u.email).slice(0, 2)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm truncate">{u.name ?? "—"}</div>
-                    <div className="text-xs text-neutral-500 truncate">{u.email}</div>
+                    <div className="text-sm font-medium truncate">{u.name ?? "—"}</div>
+                    <div className="text-xs text-[var(--text-subtle)] truncate">{u.email}</div>
                   </div>
                   <div className="flex items-center gap-1 flex-wrap justify-end max-w-[50%]">
-                    {u.isFounder && <Pill tone="violet">Founder</Pill>}
+                    {u.isFounder && <Pill tone="gold">Founder</Pill>}
                     {mems.map((m, i) => (
                       <Pill key={i}>
                         {m.brand}: {m.role.replace("_", " ")}

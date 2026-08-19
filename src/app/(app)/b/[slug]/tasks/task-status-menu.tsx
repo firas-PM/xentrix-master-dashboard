@@ -25,7 +25,7 @@ export function TaskStatusMenu({
           await updateTaskStatus({ brandSlug, taskId, status: next });
         });
       }}
-      className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-2 py-1 text-[11px] capitalize"
+      className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-1 text-[11px] capitalize focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
     >
       {TASK_STATUSES.map((s) => (
         <option key={s} value={s}>

@@ -50,7 +50,7 @@ export default async function TaskDetailPage({
   return (
     <div>
       <PageHeader title={task.title} subtitle={`${brand.name} · Task`}>
-        <Link href={`/b/${slug}/tasks`} className="text-sm text-neutral-400 hover:text-white">
+        <Link href={`/b/${slug}/tasks`} className="text-sm text-[var(--text-muted)] hover:text-[var(--text)] transition">
           ← Back to tasks
         </Link>
       </PageHeader>
@@ -74,7 +74,7 @@ export default async function TaskDetailPage({
           </Card>
 
           <Card>
-            <h2 className="text-sm uppercase tracking-wide text-neutral-500 mb-4">
+            <h2 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-4">
               Comments
             </h2>
             <TaskComments
@@ -90,7 +90,7 @@ export default async function TaskDetailPage({
 
         <aside className="space-y-4">
           <Card>
-            <h3 className="text-sm uppercase tracking-wide text-neutral-500 mb-3">
+            <h3 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-3">
               Status
             </h3>
             <TaskStatusMenu
@@ -101,7 +101,7 @@ export default async function TaskDetailPage({
           </Card>
 
           <Card>
-            <h3 className="text-sm uppercase tracking-wide text-neutral-500 mb-3">
+            <h3 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-3">
               Details
             </h3>
             <dl className="space-y-2 text-sm">
@@ -124,17 +124,17 @@ export default async function TaskDetailPage({
                 </Pill>
               </Row>
               <Row label="Assignee">
-                <span className="text-neutral-300">
+                <span className="text-[var(--text)] font-medium">
                   {assignee?.name ?? assignee?.email ?? "Unassigned"}
                 </span>
               </Row>
               <Row label="Created by">
-                <span className="text-neutral-400">
+                <span className="text-[var(--text-muted)]">
                   {creator?.name ?? creator?.email ?? "—"}
                 </span>
               </Row>
               <Row label="Created">
-                <span className="text-neutral-400">
+                <span className="text-[var(--text-muted)]">
                   {task.createdAt
                     ? formatDistanceToNowStrict(new Date(task.createdAt), { addSuffix: true })
                     : "—"}
@@ -142,7 +142,7 @@ export default async function TaskDetailPage({
               </Row>
               {task.dueAt && (
                 <Row label="Due">
-                  <span className="text-neutral-300">
+                  <span className="text-[var(--text)] font-medium">
                     {format(new Date(task.dueAt), "d MMM yyyy · HH:mm")}
                   </span>
                 </Row>
@@ -151,7 +151,7 @@ export default async function TaskDetailPage({
           </Card>
 
           <Card>
-            <h3 className="text-sm uppercase tracking-wide text-red-400/70 mb-3">
+            <h3 className="text-xs uppercase tracking-wider font-semibold text-[var(--danger)] mb-3">
               Danger zone
             </h3>
             <DeleteTaskButton brandSlug={slug} taskId={String(task._id)} />
@@ -165,7 +165,7 @@ export default async function TaskDetailPage({
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <dt className="text-xs text-neutral-500">{label}</dt>
+      <dt className="text-xs text-[var(--text-subtle)]">{label}</dt>
       <dd className="text-right">{children}</dd>
     </div>
   );
