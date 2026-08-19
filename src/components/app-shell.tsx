@@ -20,6 +20,7 @@ import {
   X,
   Sliders,
   Bell,
+  Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth-actions";
@@ -55,6 +56,19 @@ export function AppShell({
     if (user.isFounder) return true;
     const m = memberships.find((x) => x.brandSlug === activeBrandSlug);
     return m ? m.role === "brand_admin" || m.role === "founder" : false;
+  }, [activeBrandSlug, memberships, user.isFounder]);
+
+  // Whether the current user can see "Templates" (manager+).
+  const canManageActive = useMemo(() => {
+    if (!activeBrandSlug) return false;
+    if (user.isFounder) return true;
+    const m = memberships.find((x) => x.brandSlug === activeBrandSlug);
+    if (!m) return false;
+    return (
+      m.role === "manager" ||
+      m.role === "brand_admin" ||
+      m.role === "founder"
+    );
   }, [activeBrandSlug, memberships, user.isFounder]);
 
   // Close drawer whenever route changes.
@@ -220,6 +234,15 @@ export function AppShell({
               >
                 Invoices
               </NavItem>
+              {canManageActive && (
+                <NavItem
+                  href={`/b/${activeBrandSlug}/templates`}
+                  icon={Layers}
+                  active={pathname.startsWith(`/b/${activeBrandSlug}/templates`)}
+                >
+                  Templates
+                </NavItem>
+              )}
               {canAdminActive && (
                 <NavItem
                   href={`/b/${activeBrandSlug}/settings`}

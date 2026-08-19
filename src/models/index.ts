@@ -19,4 +19,5 @@ export {
   NOTIFICATION_KINDS,
   type NotificationKind,
 } from "./Notification";
+export { TaskTemplate } from "./TaskTemplate";
 export * from "./types";

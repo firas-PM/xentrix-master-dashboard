@@ -2,11 +2,13 @@ import Link from "next/link";
 import { Types } from "mongoose";
 import { getBrandBySlug } from "@/lib/brands";
 import { connectDb } from "@/lib/mongoose";
-import { Task, Project } from "@/models";
+import { Task, Project, TaskTemplate } from "@/models";
 import { PageHeader, Pill, Card, EmptyState } from "@/components/primitives";
 import { NewTaskForm } from "./new-task-form";
 import { TaskStatusMenu } from "./task-status-menu";
 import { KanbanFilters } from "./kanban-filters";
+import { TemplatePicker } from "./template-picker";
+import { BulkCreate } from "./bulk-create";
 import { listBrandMembers } from "@/lib/actions/task-actions";
 import { formatDistanceToNowStrict } from "date-fns";
 import type { TaskStatus, TaskKind, TaskPriority } from "@/models/types";
@@ -55,11 +57,14 @@ export default async function TasksPage({
     filter.title = { $regex: escapeRegex(sp.q.trim()), $options: "i" };
   }
 
-  const [allTasks, members, projects] = await Promise.all([
+  const [allTasks, members, projects, templates] = await Promise.all([
     Task.find(filter).sort({ priority: -1, updatedAt: -1 }).lean(),
     listBrandMembers(slug),
     Project.find({ brandId: brand._id, archivedAt: null }, { slug: 1, name: 1 })
       .sort({ name: 1 })
+      .lean(),
+    TaskTemplate.find({ brandId: brand._id }, { title: 1, kind: 1 })
+      .sort({ title: 1 })
       .lean(),
   ]);
 
@@ -83,6 +88,16 @@ export default async function TasksPage({
 
       <div className="p-6 lg:p-8 space-y-6">
         <Card>
+          <div className="flex items-center justify-end mb-2">
+            <BulkCreate
+              brandSlug={slug}
+              members={members}
+              projects={projects.map((p) => ({
+                id: String(p._id),
+                name: p.name,
+              }))}
+            />
+          </div>
           <NewTaskForm
             brandSlug={slug}
             members={members}
@@ -93,6 +108,19 @@ export default async function TasksPage({
             }))}
           />
         </Card>
+
+        {templates.length > 0 && (
+          <Card>
+            <TemplatePicker
+              brandSlug={slug}
+              templates={templates.map((t) => ({
+                id: String(t._id),
+                title: t.title,
+                kind: t.kind,
+              }))}
+            />
+          </Card>
+        )}
 
         <Card>
           <KanbanFilters members={members} />

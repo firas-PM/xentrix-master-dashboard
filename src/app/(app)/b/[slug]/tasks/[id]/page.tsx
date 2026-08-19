@@ -12,7 +12,8 @@ import { TaskStatusMenu } from "../task-status-menu";
 import { TaskComments } from "./task-comments";
 import { TaskTime } from "./task-time";
 import { DeleteTaskButton } from "./delete-task-button";
-import type { TaskStatus } from "@/models/types";
+import { TaskShortcuts } from "./task-shortcuts";
+import type { TaskStatus, TaskKind, TaskPriority } from "@/models/types";
 
 export default async function TaskDetailPage({
   params,
@@ -196,6 +197,30 @@ export default async function TaskDetailPage({
                 </Row>
               )}
             </dl>
+          </Card>
+
+          <Card>
+            <h3 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-3">
+              Shortcuts
+            </h3>
+            <TaskShortcuts
+              brandSlug={slug}
+              taskId={String(task._id)}
+              members={members}
+              prefill={{
+                id: "new",
+                title: task.title,
+                kind: task.kind as TaskKind,
+                priority: task.priority as TaskPriority,
+                defaultAssigneeId: task.assignedToId
+                  ? String(task.assignedToId)
+                  : "",
+                frequency: "weekly",
+                time: "09:00",
+                daysOfWeek: [1],
+                dayOfMonth: 1,
+              }}
+            />
           </Card>
 
           {canManage && (
