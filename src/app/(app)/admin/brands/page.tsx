@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireFounder } from "@/lib/access";
 import { connectDb } from "@/lib/mongoose";
 import { Brand } from "@/models";
@@ -13,12 +14,19 @@ export default async function AdminBrandsPage() {
       <PageHeader
         title="Manage brands"
         subtitle="Create, archive, or restyle any brand."
-      />
+      >
+        <Link
+          href="/admin/brands/new"
+          className="rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-ink)] text-sm font-semibold px-3 py-1.5 transition"
+        >
+          + New brand
+        </Link>
+      </PageHeader>
       <div className="p-8">
         {brands.length === 0 ? (
           <EmptyState
             title="No brands yet"
-            hint="Run `pnpm db:seed` to seed the initial set, or use the create form (coming soon)."
+            hint='Click "+ New brand" above to add your first brand workspace.'
           />
         ) : (
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
