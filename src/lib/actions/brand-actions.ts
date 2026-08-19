@@ -84,3 +84,44 @@ export async function restoreBrand(input: unknown) {
   revalidatePath("/admin/brands");
   revalidatePath("/");
 }
+
+const updateBrandSchema = z.object({
+  slug: z.string(),
+  name: z.string().min(1).max(120),
+  sector: z.enum(BRAND_SECTORS),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color must be a 6-digit hex"),
+  description: z.string().max(500).optional().nullable(),
+  timezone: z.string().min(1).max(64),
+});
+
+export type UpdateBrandResult = { ok: true } | { ok: false; error: string };
+
+export async function updateBrand(input: unknown): Promise<UpdateBrandResult> {
+  const parsed = updateBrandSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+  await requireFounder();
+  await connectDb();
+  await Brand.updateOne(
+    { slug: parsed.data.slug },
+    {
+      $set: {
+        name: parsed.data.name.trim(),
+        sector: parsed.data.sector,
+        color: parsed.data.color,
+        description: parsed.data.description?.trim() || null,
+        timezone: parsed.data.timezone,
+      },
+    }
+  );
+  updateTag(founderOverviewTag);
+  updateTag(brandStatsTag);
+  revalidatePath("/admin/brands");
+  revalidatePath(`/admin/brands/${parsed.data.slug}`);
+  revalidatePath(`/b/${parsed.data.slug}`);
+  return { ok: true };
+}

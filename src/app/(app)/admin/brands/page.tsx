@@ -2,7 +2,8 @@ import Link from "next/link";
 import { requireFounder } from "@/lib/access";
 import { connectDb } from "@/lib/mongoose";
 import { Brand } from "@/models";
-import { PageHeader, Card, EmptyState } from "@/components/primitives";
+import { PageHeader, Card, EmptyState, Pill } from "@/components/primitives";
+import { BrandRowMenu } from "./brand-row-menu";
 
 export default async function AdminBrandsPage() {
   await requireFounder();
@@ -31,7 +32,7 @@ export default async function AdminBrandsPage() {
         ) : (
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {brands.map((b) => (
-              <Card key={String(b._id)}>
+              <Card key={String(b._id)} className={b.archivedAt ? "opacity-60" : undefined}>
                 <div className="flex items-center gap-3 mb-2">
                   <div
                     className="h-8 w-8 rounded-md grid place-items-center text-sm font-semibold"
@@ -43,8 +44,11 @@ export default async function AdminBrandsPage() {
                   >
                     {b.name.slice(0, 1).toUpperCase()}
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{b.name}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium truncate flex items-center gap-2">
+                      {b.name}
+                      {b.archivedAt && <Pill tone="neutral">Archived</Pill>}
+                    </div>
                     <div className="text-[11px] text-[var(--text-subtle)] capitalize">
                       {b.sector.replace("_", " ")} · {b.slug}
                     </div>
@@ -53,6 +57,7 @@ export default async function AdminBrandsPage() {
                 {b.description && (
                   <p className="text-xs text-[var(--text-muted)] line-clamp-3">{b.description}</p>
                 )}
+                <BrandRowMenu slug={b.slug} isArchived={Boolean(b.archivedAt)} />
               </Card>
             ))}
           </div>
