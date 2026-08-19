@@ -1,4 +1,5 @@
 import { getBrandBySlug } from "@/lib/brands";
+import { canManageBrand } from "@/lib/access";
 import { connectDb } from "@/lib/mongoose";
 import { Invoice } from "@/models";
 import { PageHeader, Card, EmptyState, Pill, StatTile } from "@/components/primitives";
@@ -14,6 +15,7 @@ export default async function InvoicesPage({
 }) {
   const { slug } = await params;
   const brand = await getBrandBySlug(slug);
+  const canManage = await canManageBrand(slug);
   await connectDb();
   const invoices = await Invoice.find({ brandId: brand._id })
     .sort({ issuedAt: -1, createdAt: -1 })
@@ -51,9 +53,11 @@ export default async function InvoicesPage({
           />
         </div>
 
-        <Card>
-          <NewInvoiceForm brandSlug={slug} />
-        </Card>
+        {canManage && (
+          <Card>
+            <NewInvoiceForm brandSlug={slug} />
+          </Card>
+        )}
 
         {invoices.length === 0 ? (
           <EmptyState
@@ -71,7 +75,7 @@ export default async function InvoicesPage({
                   <Th>Issued</Th>
                   <Th>Due</Th>
                   <Th>Status</Th>
-                  <Th className="text-right">Actions</Th>
+                  {canManage && <Th className="text-right">Actions</Th>}
                 </tr>
               </thead>
               <tbody>
@@ -112,15 +116,17 @@ export default async function InvoicesPage({
                         {inv.status}
                       </Pill>
                     </Td>
-                    <Td className="text-right">
-                      <div className="flex justify-end">
-                        <InvoiceRowActions
-                          brandSlug={slug}
-                          invoiceId={String(inv._id)}
-                          current={inv.status as InvoiceStatus}
-                        />
-                      </div>
-                    </Td>
+                    {canManage && (
+                      <Td className="text-right">
+                        <div className="flex justify-end">
+                          <InvoiceRowActions
+                            brandSlug={slug}
+                            invoiceId={String(inv._id)}
+                            current={inv.status as InvoiceStatus}
+                          />
+                        </div>
+                      </Td>
+                    )}
                   </tr>
                 ))}
               </tbody>

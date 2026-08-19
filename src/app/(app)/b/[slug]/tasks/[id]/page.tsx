@@ -4,7 +4,7 @@ import { getBrandBySlug } from "@/lib/brands";
 import { connectDb } from "@/lib/mongoose";
 import { Task, TaskComment, User, TaskTimeEntry } from "@/models";
 import { listBrandMembers } from "@/lib/actions/task-actions";
-import { requireSession } from "@/lib/access";
+import { requireSession, canManageBrand } from "@/lib/access";
 import { PageHeader, Card, Pill } from "@/components/primitives";
 import { formatDistanceToNowStrict, format } from "date-fns";
 import { TaskDetailForm } from "./task-detail-form";
@@ -22,6 +22,7 @@ export default async function TaskDetailPage({
   const { slug, id } = await params;
   const session = await requireSession();
   const brand = await getBrandBySlug(slug);
+  const canManage = await canManageBrand(slug);
   await connectDb();
 
   const task = await Task.findOne({ _id: id, brandId: brand._id }).lean();
@@ -188,12 +189,14 @@ export default async function TaskDetailPage({
             </dl>
           </Card>
 
-          <Card>
-            <h3 className="text-xs uppercase tracking-wider font-semibold text-[var(--danger)] mb-3">
-              Danger zone
-            </h3>
-            <DeleteTaskButton brandSlug={slug} taskId={String(task._id)} />
-          </Card>
+          {canManage && (
+            <Card>
+              <h3 className="text-xs uppercase tracking-wider font-semibold text-[var(--danger)] mb-3">
+                Danger zone
+              </h3>
+              <DeleteTaskButton brandSlug={slug} taskId={String(task._id)} />
+            </Card>
+          )}
         </aside>
       </div>
     </div>

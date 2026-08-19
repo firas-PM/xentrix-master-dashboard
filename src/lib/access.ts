@@ -52,3 +52,16 @@ const ROLE_RANK: Record<Role, number> = {
 export function hasRoleAtLeast(role: Role, min: Role) {
   return ROLE_RANK[role] >= ROLE_RANK[min];
 }
+
+/**
+ * Client-side visibility helper — mirrors the manager-and-up gate that
+ * server actions enforce. Use it in pages to hide forms/buttons that a
+ * worker can technically see but not submit, so the UI matches capability.
+ * Founders always pass.
+ */
+export async function canManageBrand(slug: string): Promise<boolean> {
+  const session = await requireSession();
+  if (session.user.isFounder) return true;
+  const m = session.user.memberships.find((x) => x.brandSlug === slug);
+  return m ? hasRoleAtLeast(m.role, "manager") : false;
+}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getBrandBySlug } from "@/lib/brands";
+import { canManageBrand } from "@/lib/access";
 import { connectDb } from "@/lib/mongoose";
 import { Project } from "@/models";
 import { PageHeader, Card, EmptyState, Pill } from "@/components/primitives";
@@ -12,6 +13,7 @@ export default async function ProjectsPage({
 }) {
   const { slug } = await params;
   const brand = await getBrandBySlug(slug);
+  const canManage = await canManageBrand(slug);
   await connectDb();
   const projects = await Project.find({ brandId: brand._id })
     .sort({ archivedAt: 1, updatedAt: -1 })
@@ -21,9 +23,11 @@ export default async function ProjectsPage({
     <div>
       <PageHeader title="Projects" subtitle={brand.name} />
       <div className="p-8 space-y-6">
-        <Card>
-          <NewProjectForm brandSlug={slug} />
-        </Card>
+        {canManage && (
+          <Card>
+            <NewProjectForm brandSlug={slug} />
+          </Card>
+        )}
 
         {projects.length === 0 ? (
           <EmptyState

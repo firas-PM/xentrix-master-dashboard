@@ -1,4 +1,5 @@
 import { getBrandBySlug } from "@/lib/brands";
+import { canManageBrand } from "@/lib/access";
 import { connectDb } from "@/lib/mongoose";
 import { RecurringTaskTemplate } from "@/models";
 import { listBrandMembers } from "@/lib/actions/task-actions";
@@ -15,6 +16,7 @@ export default async function RecurringPage({
 }) {
   const { slug } = await params;
   const brand = await getBrandBySlug(slug);
+  const canManage = await canManageBrand(slug);
   await connectDb();
   const [templates, members] = await Promise.all([
     RecurringTaskTemplate.find({ brandId: brand._id })
@@ -30,9 +32,11 @@ export default async function RecurringPage({
         subtitle={`Auto-created ${templates.filter((t) => t.active).length} × per schedule for ${brand.name}. Runs from the daily cron.`}
       />
       <div className="p-8 space-y-6">
-        <Card>
-          <NewRecurringForm brandSlug={slug} members={members} />
-        </Card>
+        {canManage && (
+          <Card>
+            <NewRecurringForm brandSlug={slug} members={members} />
+          </Card>
+        )}
 
         {templates.length === 0 ? (
           <EmptyState
@@ -71,11 +75,13 @@ export default async function RecurringPage({
                         <span className="capitalize">{t.priority}</span>
                       </div>
                     </div>
-                    <RecurringRowActions
-                      brandSlug={slug}
-                      templateId={String(t._id)}
-                      active={t.active}
-                    />
+                    {canManage && (
+                      <RecurringRowActions
+                        brandSlug={slug}
+                        templateId={String(t._id)}
+                        active={t.active}
+                      />
+                    )}
                   </div>
                 </Card>
               );

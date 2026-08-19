@@ -81,7 +81,7 @@ founder     = 4  (system-wide flag on the User, not a brand membership)
 | Change invoice status (draft → sent → paid → …) | ❌ | ✅ | ✅ | ✅ |
 | Delete an invoice | ❌ | ✅ | ✅ | ✅ |
 
-> ⚠️ **Note (open UX gap):** a worker still sees the project edit form, "Create recurring", "Add invoice", and the "New project" input — the buttons just fail with a permission error when submitted. Not a security bug (the server rejects them cleanly), but not great UX. Worth hiding these forms client-side for workers in a follow-up.
+> **UI matches capability:** manager-only surfaces (New project / New recurring / New invoice forms, invoice row-actions, project edit form, task Danger zone) are hidden from workers via `canManageBrand(slug)` in each page. Workers see a read-only project detail card instead of the edit form. The server-side gates are still authoritative, so this is defense-in-depth, not the only line of defense.
 
 ---
 
