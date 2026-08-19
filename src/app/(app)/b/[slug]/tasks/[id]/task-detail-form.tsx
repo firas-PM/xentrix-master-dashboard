@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { updateTaskDetails } from "@/lib/actions/task-actions";
 import { TASK_KINDS, TASK_PRIORITIES, type TaskKind, type TaskPriority } from "@/models/types";
+import { renderMarkdown } from "@/lib/markdown";
 
 type Member = { id: string; name: string; email: string };
 
@@ -69,15 +70,10 @@ export function TaskDetailForm({
         />
       </Field>
 
-      <Field label="Description">
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={6}
-          placeholder="What's involved? Any links, files, or context."
-          className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
-        />
-      </Field>
+      <DescriptionField
+        value={description}
+        onChange={setDescription}
+      />
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <SelectField label="Kind" value={kind} onChange={(v) => setKind(v as TaskKind)} options={TASK_KINDS} />
@@ -184,6 +180,66 @@ export function TaskDetailForm({
         {msg && <span className="text-xs text-[var(--success)]">{msg}</span>}
       </div>
     </form>
+  );
+}
+
+function DescriptionField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [tab, setTab] = useState<"edit" | "preview">("edit");
+  const html = useMemo(() => renderMarkdown(value), [value]);
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] flex-1">
+          Description
+        </span>
+        <div className="flex items-center gap-1 border border-[var(--border)] rounded-md p-0.5">
+          <button
+            type="button"
+            onClick={() => setTab("edit")}
+            className={
+              "text-[10px] font-semibold px-2 py-0.5 rounded transition " +
+              (tab === "edit"
+                ? "bg-[var(--accent)] text-[var(--accent-ink)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text)]")
+            }
+          >
+            Write
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("preview")}
+            className={
+              "text-[10px] font-semibold px-2 py-0.5 rounded transition " +
+              (tab === "preview"
+                ? "bg-[var(--accent)] text-[var(--accent-ink)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text)]")
+            }
+          >
+            Preview
+          </button>
+        </div>
+      </div>
+      {tab === "edit" ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={6}
+          placeholder="What's involved? Supports **bold**, *italic*, `code`, - lists, and [links](https://…)."
+          className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
+        />
+      ) : (
+        <div
+          className="mkd rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-3 py-2 text-sm min-h-[8rem] prose-container"
+          dangerouslySetInnerHTML={{ __html: html || "<em class=\"text-[var(--text-subtle)]\">Nothing to preview.</em>" }}
+        />
+      )}
+    </div>
   );
 }
 

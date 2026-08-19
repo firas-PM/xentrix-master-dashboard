@@ -27,6 +27,26 @@ const TaskSchema = new Schema(
       ],
       default: [],
     },
+    /** File attachments (uploaded to Vercel Blob). */
+    attachments: {
+      type: [
+        {
+          url: { type: String, required: true },
+          pathname: { type: String, required: true },
+          name: { type: String, required: true },
+          size: { type: Number },
+          contentType: { type: String },
+          uploadedById: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+          },
+          uploadedAt: { type: Date, default: () => new Date() },
+          _id: false,
+        },
+      ],
+      default: [],
+    },
     metadata: { type: Schema.Types.Mixed },
     recurringTemplateId: { type: Schema.Types.ObjectId, ref: "RecurringTaskTemplate", default: null },
   },

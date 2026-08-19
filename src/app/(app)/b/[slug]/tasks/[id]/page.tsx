@@ -13,6 +13,8 @@ import { TaskComments } from "./task-comments";
 import { TaskTime } from "./task-time";
 import { DeleteTaskButton } from "./delete-task-button";
 import { TaskShortcuts } from "./task-shortcuts";
+import { Subtasks } from "./subtasks";
+import { TaskAttachments } from "./task-attachments";
 import type { TaskStatus, TaskKind, TaskPriority } from "@/models/types";
 
 export default async function TaskDetailPage({
@@ -29,16 +31,23 @@ export default async function TaskDetailPage({
   const task = await Task.findOne({ _id: id, brandId: brand._id }).lean();
   if (!task) notFound();
 
-  const [members, comments, creator, assignee, timeEntries] = await Promise.all([
-    listBrandMembers(slug),
-    TaskComment.find({ taskId: task._id }).sort({ createdAt: 1 }).lean(),
-    task.createdById ? User.findById(task.createdById).lean() : null,
-    task.assignedToId ? User.findById(task.assignedToId).lean() : null,
-    TaskTimeEntry.find({ taskId: task._id })
-      .sort({ workedAt: -1 })
-      .populate("userId", "name email")
-      .lean(),
-  ]);
+  const [members, comments, creator, assignee, timeEntries, children] =
+    await Promise.all([
+      listBrandMembers(slug),
+      TaskComment.find({ taskId: task._id }).sort({ createdAt: 1 }).lean(),
+      task.createdById ? User.findById(task.createdById).lean() : null,
+      task.assignedToId ? User.findById(task.assignedToId).lean() : null,
+      TaskTimeEntry.find({ taskId: task._id })
+        .sort({ workedAt: -1 })
+        .populate("userId", "name email")
+        .lean(),
+      Task.find({ parentTaskId: task._id, brandId: brand._id }, {
+        title: 1,
+        status: 1,
+      })
+        .sort({ createdAt: 1 })
+        .lean(),
+    ]);
 
   const commentsWithAuthor = await Promise.all(
     comments.map(async (c) => {
@@ -84,6 +93,46 @@ export default async function TaskDetailPage({
                   : [],
               }}
               members={members}
+            />
+          </Card>
+
+          <Card>
+            <h2 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-4">
+              Attachments
+            </h2>
+            <TaskAttachments
+              brandSlug={slug}
+              taskId={String(task._id)}
+              uploadsEnabled={Boolean(process.env.BLOB_READ_WRITE_TOKEN)}
+              attachments={
+                Array.isArray(task.attachments)
+                  ? task.attachments.map((a) => ({
+                      url: a.url,
+                      pathname: a.pathname,
+                      name: a.name,
+                      size: a.size ?? null,
+                      contentType: a.contentType ?? null,
+                      uploadedAt: a.uploadedAt
+                        ? new Date(a.uploadedAt).toISOString()
+                        : new Date().toISOString(),
+                    }))
+                  : []
+              }
+            />
+          </Card>
+
+          <Card>
+            <h2 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-4">
+              Subtasks
+            </h2>
+            <Subtasks
+              brandSlug={slug}
+              parentTaskId={String(task._id)}
+              subtasks={children.map((c) => ({
+                id: String(c._id),
+                title: c.title,
+                status: c.status as TaskStatus,
+              }))}
             />
           </Card>
 
