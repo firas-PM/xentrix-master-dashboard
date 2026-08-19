@@ -14,4 +14,9 @@ export {
   type InvoiceStatus,
   type InvoiceCurrency,
 } from "./Invoice";
+export {
+  Notification,
+  NOTIFICATION_KINDS,
+  type NotificationKind,
+} from "./Notification";
 export * from "./types";

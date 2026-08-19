@@ -1,15 +1,20 @@
 import { AppShell } from "@/components/app-shell";
 import { requireSession } from "@/lib/access";
-import { listAllBrands } from "@/lib/queries";
+import { listAllBrands, getUnreadCount } from "@/lib/queries";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await requireSession();
-  const captureBrands = session.user.isFounder
-    ? await listAllBrands()
-    : session.user.memberships.map((m) => ({
-        slug: m.brandSlug,
-        name: m.brandName,
-      }));
+  const [captureBrands, unreadCount] = await Promise.all([
+    session.user.isFounder
+      ? listAllBrands()
+      : Promise.resolve(
+          session.user.memberships.map((m) => ({
+            slug: m.brandSlug,
+            name: m.brandName,
+          }))
+        ),
+    getUnreadCount(session.user.id),
+  ]);
   return (
     <AppShell
       user={{
@@ -19,6 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       }}
       memberships={session.user.memberships}
       captureBrands={captureBrands}
+      unreadCount={unreadCount}
     >
       {children}
     </AppShell>

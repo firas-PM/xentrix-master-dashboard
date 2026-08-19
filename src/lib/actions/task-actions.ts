@@ -4,7 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { connectDb } from "@/lib/mongoose";
-import { Task, Brand, Membership, TaskComment, User } from "@/models";
+import { Task, Brand, Membership, TaskComment, User, Notification } from "@/models";
 import { requireBrandAccess } from "@/lib/access";
 import { TASK_KINDS, TASK_PRIORITIES, TASK_STATUSES } from "@/models/types";
 import { brandStatsTag, founderOverviewTag } from "@/lib/queries";
@@ -202,7 +202,8 @@ export async function addTaskComment(input: unknown) {
   revalidatePath(`/b/${parsed.brandSlug}/tasks/${parsed.taskId}`);
 }
 
-/** Parse @first-last / @first tokens and email matching brand members. */
+/** Parse @first-last / @first tokens, insert in-app notifications, and
+ *  email matching brand members (if Resend is configured). */
 async function notifyMentions(input: {
   body: string;
   brandId: unknown;
@@ -213,7 +214,6 @@ async function notifyMentions(input: {
   actorName: string;
   actorId: string;
 }) {
-  if (!process.env.RESEND_API_KEY) return;
   const tokens = Array.from(input.body.matchAll(/@([a-zA-Z][\w-]{1,40})/g)).map(
     (m) => m[1].toLowerCase()
   );
@@ -223,7 +223,7 @@ async function notifyMentions(input: {
     .populate("userId")
     .lean();
 
-  const uniqueMatches = new Map<string, { email: string; name: string }>();
+  const matchedUsers: { userId: string; email: string; name: string }[] = [];
   for (const m of memberships) {
     const u = m.userId as unknown as {
       _id: { toString(): string };
@@ -237,20 +237,37 @@ async function notifyMentions(input: {
       .replace(/\s+/g, "-");
     const emailLocal = u.email.split("@")[0].toLowerCase();
     if (tokens.includes(nameSlug) || tokens.includes(emailLocal)) {
-      uniqueMatches.set(u.email, {
+      matchedUsers.push({
+        userId: String(u._id),
         email: u.email,
         name: u.name ?? u.email,
       });
     }
   }
-  if (uniqueMatches.size === 0) return;
+  if (matchedUsers.length === 0) return;
 
-  const base = process.env.NEXTAUTH_URL ?? "https://xentrix-master-dashboard.vercel.app";
-  const url = `${base}/b/${input.brandSlug}/tasks/${input.taskId}`;
+  const base =
+    process.env.NEXTAUTH_URL ?? "https://xentrix-master-dashboard.vercel.app";
+  const href = `/b/${input.brandSlug}/tasks/${input.taskId}`;
+  const url = `${base}${href}`;
+
+  // 1. Insert in-app notifications for every matched user.
+  await Notification.insertMany(
+    matchedUsers.map((u) => ({
+      userId: u.userId,
+      kind: "mention",
+      summary: `${input.actorName} mentioned you on "${input.taskTitle}"`,
+      href,
+      actorId: input.actorId,
+      brandId: input.brandId as string,
+    }))
+  );
+
+  // 2. Best-effort email (only if Resend configured).
+  if (!process.env.RESEND_API_KEY) return;
   const from = process.env.RESEND_FROM ?? "Xentrix <no-reply@xentrix.xyz>";
-
   await Promise.all(
-    [...uniqueMatches.values()].map((m) =>
+    matchedUsers.map((m) =>
       sendEmailViaResend({
         from,
         to: m.email,

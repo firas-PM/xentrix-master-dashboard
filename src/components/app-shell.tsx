@@ -19,6 +19,7 @@ import {
   Menu,
   X,
   Sliders,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth-actions";
@@ -29,10 +30,17 @@ type Props = {
   user: { name?: string | null; email?: string | null; isFounder: boolean };
   memberships: SessionMembership[];
   captureBrands: { slug: string; name: string }[];
+  unreadCount: number;
   children: React.ReactNode;
 };
 
-export function AppShell({ user, memberships, captureBrands, children }: Props) {
+export function AppShell({
+  user,
+  memberships,
+  captureBrands,
+  unreadCount,
+  children,
+}: Props) {
   const pathname = usePathname();
   const activeBrandSlug = useMemo(() => {
     const m = pathname.match(/^\/b\/([^/]+)/);
@@ -120,9 +128,30 @@ export function AppShell({ user, memberships, captureBrands, children }: Props) 
           <NavItem href="/my" icon={Inbox} active={pathname.startsWith("/my")}>
             My work
           </NavItem>
+          <NavItem
+            href="/notifications"
+            icon={Bell}
+            active={pathname.startsWith("/notifications")}
+          >
+            Inbox
+            {unreadCount > 0 && (
+              <span className="ml-auto text-[10px] font-semibold bg-[var(--accent)] text-[var(--accent-ink)] rounded-full px-1.5 py-[1px] leading-tight">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </NavItem>
           {user.isFounder && (
             <NavItem href="/" icon={LayoutDashboard} active={pathname === "/"}>
               All brands
+            </NavItem>
+          )}
+          {user.isFounder && (
+            <NavItem
+              href="/activity"
+              icon={BarChart3}
+              active={pathname === "/activity"}
+            >
+              Activity
             </NavItem>
           )}
 

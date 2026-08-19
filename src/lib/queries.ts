@@ -1,7 +1,7 @@
 import { Types } from "mongoose";
 import { unstable_cache } from "next/cache";
 import { connectDb } from "@/lib/mongoose";
-import { Task, Project, Brand, ActivityEvent } from "@/models";
+import { Task, Project, Brand, ActivityEvent, Notification } from "@/models";
 
 export const brandStatsTag = "brand-stats";
 export const founderOverviewTag = "founder-overview";
@@ -402,6 +402,91 @@ export async function getBrandUtilization(
   ]);
 
   return rows as UtilizationRow[];
+}
+
+export type NotificationRow = {
+  id: string;
+  kind: string;
+  summary: string;
+  href: string;
+  brandName?: string;
+  createdAt: Date;
+  readAt: Date | null;
+};
+
+export async function getUserNotifications(
+  userId: string,
+  limit = 100
+): Promise<NotificationRow[]> {
+  await connectDb();
+  const rows = await Notification.find({ userId })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .populate("brandId", "name")
+    .lean();
+  return rows.map((r) => {
+    const b = r.brandId as unknown as { name?: string } | null;
+    return {
+      id: String(r._id),
+      kind: r.kind,
+      summary: r.summary,
+      href: r.href,
+      brandName: b?.name,
+      createdAt: r.createdAt,
+      readAt: r.readAt ?? null,
+    };
+  });
+}
+
+export async function getUnreadCount(userId: string): Promise<number> {
+  await connectDb();
+  return Notification.countDocuments({ userId, readAt: null });
+}
+
+export type CrossBrandActivityRow = BrandActivityRow & {
+  brand: { slug: string; name: string; color: string };
+};
+
+export async function getCrossBrandActivity(
+  limit = 60
+): Promise<CrossBrandActivityRow[]> {
+  await connectDb();
+  const rows = await ActivityEvent.find({})
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .populate("actorId", "name email")
+    .populate("brandId", "slug name color")
+    .lean();
+  return rows
+    .map((r) => {
+      const actor = r.actorId as unknown as {
+        name?: string;
+        email?: string;
+      } | null;
+      const brand = r.brandId as unknown as {
+        slug?: string;
+        name?: string;
+        color?: string;
+      } | null;
+      if (!brand?.slug) return null;
+      const row: CrossBrandActivityRow = {
+        _id: String(r._id),
+        kind: r.kind as string,
+        summary: r.summary,
+        href: r.href ?? null,
+        createdAt: r.createdAt,
+        actor: actor
+          ? { name: actor.name ?? actor.email ?? "?", email: actor.email ?? "" }
+          : null,
+        brand: {
+          slug: brand.slug,
+          name: brand.name ?? brand.slug,
+          color: brand.color ?? "#7A7A7A",
+        },
+      };
+      return row;
+    })
+    .filter((x): x is CrossBrandActivityRow => x !== null);
 }
 
 export type BrandActivityRow = {
