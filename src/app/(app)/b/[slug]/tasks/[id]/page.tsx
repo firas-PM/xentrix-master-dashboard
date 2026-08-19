@@ -2,13 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getBrandBySlug } from "@/lib/brands";
 import { connectDb } from "@/lib/mongoose";
-import { Task, TaskComment, User } from "@/models";
+import { Task, TaskComment, User, TaskTimeEntry } from "@/models";
 import { listBrandMembers } from "@/lib/actions/task-actions";
+import { requireSession } from "@/lib/access";
 import { PageHeader, Card, Pill } from "@/components/primitives";
 import { formatDistanceToNowStrict, format } from "date-fns";
 import { TaskDetailForm } from "./task-detail-form";
 import { TaskStatusMenu } from "../task-status-menu";
 import { TaskComments } from "./task-comments";
+import { TaskTime } from "./task-time";
 import { DeleteTaskButton } from "./delete-task-button";
 import type { TaskStatus } from "@/models/types";
 
@@ -18,17 +20,22 @@ export default async function TaskDetailPage({
   params: Promise<{ slug: string; id: string }>;
 }) {
   const { slug, id } = await params;
+  const session = await requireSession();
   const brand = await getBrandBySlug(slug);
   await connectDb();
 
   const task = await Task.findOne({ _id: id, brandId: brand._id }).lean();
   if (!task) notFound();
 
-  const [members, comments, creator, assignee] = await Promise.all([
+  const [members, comments, creator, assignee, timeEntries] = await Promise.all([
     listBrandMembers(slug),
     TaskComment.find({ taskId: task._id }).sort({ createdAt: 1 }).lean(),
     task.createdById ? User.findById(task.createdById).lean() : null,
     task.assignedToId ? User.findById(task.assignedToId).lean() : null,
+    TaskTimeEntry.find({ taskId: task._id })
+      .sort({ workedAt: -1 })
+      .populate("userId", "name email")
+      .lean(),
   ]);
 
   const commentsWithAuthor = await Promise.all(
@@ -73,6 +80,34 @@ export default async function TaskDetailPage({
                   : [],
               }}
               members={members}
+            />
+          </Card>
+
+          <Card>
+            <h2 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)] mb-4">
+              Time tracking
+            </h2>
+            <TaskTime
+              brandSlug={slug}
+              taskId={String(task._id)}
+              currentUserId={session.user.id}
+              entries={timeEntries.map((e) => {
+                const u = e.userId as unknown as {
+                  _id: { toString(): string };
+                  name?: string;
+                  email?: string;
+                } | null;
+                return {
+                  id: String(e._id),
+                  minutes: e.minutes,
+                  note: e.note ?? null,
+                  workedAt: e.workedAt
+                    ? new Date(e.workedAt).toISOString()
+                    : new Date().toISOString(),
+                  authorId: u ? String(u._id) : "",
+                  authorName: u?.name ?? u?.email ?? "Unknown",
+                };
+              })}
             />
           </Card>
 

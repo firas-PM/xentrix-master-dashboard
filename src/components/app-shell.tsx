@@ -13,6 +13,9 @@ import {
   ListTodo,
   FolderKanban,
   Inbox,
+  Repeat,
+  BarChart3,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth-actions";
@@ -108,6 +111,27 @@ export function AppShell({ user, memberships, captureBrands, children }: Props) 
                 active={pathname.startsWith(`/b/${activeBrandSlug}/team`)}
               >
                 Team
+              </NavItem>
+              <NavItem
+                href={`/b/${activeBrandSlug}/recurring`}
+                icon={Repeat}
+                active={pathname.startsWith(`/b/${activeBrandSlug}/recurring`)}
+              >
+                Recurring
+              </NavItem>
+              <NavItem
+                href={`/b/${activeBrandSlug}/utilization`}
+                icon={BarChart3}
+                active={pathname.startsWith(`/b/${activeBrandSlug}/utilization`)}
+              >
+                Utilization
+              </NavItem>
+              <NavItem
+                href={`/b/${activeBrandSlug}/invoices`}
+                icon={Receipt}
+                active={pathname.startsWith(`/b/${activeBrandSlug}/invoices`)}
+              >
+                Invoices
               </NavItem>
             </>
           )}
