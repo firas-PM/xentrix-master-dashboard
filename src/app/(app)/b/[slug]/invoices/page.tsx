@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getBrandBySlug } from "@/lib/brands";
 import { canManageBrand } from "@/lib/access";
 import { connectDb } from "@/lib/mongoose";
@@ -8,31 +9,66 @@ import { InvoiceRowActions } from "./invoice-row-actions";
 import type { InvoiceStatus, InvoiceCurrency } from "@/models/Invoice";
 import { format } from "date-fns";
 
+const PAGE_SIZE = 50;
+
 export default async function InvoicesPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string; status?: string }>;
 }) {
   const { slug } = await params;
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const brand = await getBrandBySlug(slug);
   const canManage = await canManageBrand(slug);
   await connectDb();
-  const invoices = await Invoice.find({ brandId: brand._id })
-    .sort({ issuedAt: -1, createdAt: -1 })
-    .lean();
+
+  const listFilter: Record<string, unknown> = { brandId: brand._id };
+  if (
+    sp.status &&
+    (["draft", "sent", "paid", "overdue", "void"] as string[]).includes(sp.status)
+  ) {
+    listFilter.status = sp.status;
+  }
+
+  const [invoices, total, totalsByStatusAgg] = await Promise.all([
+    Invoice.find(listFilter)
+      .sort({ issuedAt: -1, createdAt: -1 })
+      .skip((page - 1) * PAGE_SIZE)
+      .limit(PAGE_SIZE)
+      .lean(),
+    Invoice.countDocuments(listFilter),
+    // Totals across ALL invoices for this brand (not paginated / not
+    // filtered by status), so the stat tiles stay stable.
+    Invoice.aggregate([
+      { $match: { brandId: brand._id } },
+      {
+        $group: {
+          _id: { status: "$status", currency: "$currency" },
+          total: { $sum: "$amountCents" },
+        },
+      },
+    ]),
+  ]);
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const totalsByStatus = new Map<InvoiceStatus, Map<string, number>>();
-  for (const inv of invoices) {
-    const s = totalsByStatus.get(inv.status as InvoiceStatus) ?? new Map();
-    s.set(inv.currency, (s.get(inv.currency) ?? 0) + inv.amountCents);
-    totalsByStatus.set(inv.status as InvoiceStatus, s);
+  for (const row of totalsByStatusAgg as Array<{
+    _id: { status: InvoiceStatus; currency: string };
+    total: number;
+  }>) {
+    const s = totalsByStatus.get(row._id.status) ?? new Map();
+    s.set(row._id.currency, (s.get(row._id.currency) ?? 0) + row.total);
+    totalsByStatus.set(row._id.status, s);
   }
 
   return (
     <div>
       <PageHeader
         title="Invoices"
-        subtitle={`${invoices.length} invoice${invoices.length === 1 ? "" : "s"} for ${brand.name}.`}
+        subtitle={`${total} invoice${total === 1 ? "" : "s"} for ${brand.name}.`}
       />
       <div className="p-8 space-y-6">
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
@@ -59,10 +95,41 @@ export default async function InvoicesPage({
           </Card>
         )}
 
+        {/* Status filter tabs */}
+        <div className="flex items-center gap-1 border border-[var(--border)] rounded-md p-0.5 bg-[var(--bg-elevated)] w-fit">
+          {[
+            { key: "", label: "All" },
+            { key: "draft", label: "Draft" },
+            { key: "sent", label: "Sent" },
+            { key: "paid", label: "Paid" },
+            { key: "overdue", label: "Overdue" },
+            { key: "void", label: "Void" },
+          ].map((f) => {
+            const active = (sp.status ?? "") === f.key;
+            const href = f.key
+              ? `/b/${slug}/invoices?status=${f.key}`
+              : `/b/${slug}/invoices`;
+            return (
+              <Link
+                key={f.key || "all"}
+                href={href}
+                className={
+                  "text-xs font-semibold px-2.5 py-1 rounded transition " +
+                  (active
+                    ? "bg-[var(--accent)] text-[var(--accent-ink)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text)]")
+                }
+              >
+                {f.label}
+              </Link>
+            );
+          })}
+        </div>
+
         {invoices.length === 0 ? (
           <EmptyState
-            title="No invoices yet"
-            hint="Log the first one to start tracking cashflow per brand."
+            title="No invoices in this view"
+            hint="Try clearing the filter, or log a new invoice above."
           />
         ) : (
           <Card className="p-0 overflow-hidden">
@@ -147,6 +214,46 @@ export default async function InvoicesPage({
               </tbody>
             </table>
           </Card>
+        )}
+
+        {pageCount > 1 && (
+          <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+            <span>
+              Page {page} of {pageCount} · {total} invoice{total === 1 ? "" : "s"}
+            </span>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/b/${slug}/invoices?${new URLSearchParams({
+                  ...(sp.status ? { status: sp.status } : {}),
+                  page: String(Math.max(1, page - 1)),
+                }).toString()}`}
+                aria-disabled={page === 1}
+                className={
+                  "text-xs font-medium rounded-md border border-[var(--border-strong)] px-2.5 py-1 transition " +
+                  (page === 1
+                    ? "opacity-40 pointer-events-none"
+                    : "hover:border-[var(--text-muted)] hover:bg-[var(--bg-sunken)]")
+                }
+              >
+                ← Prev
+              </Link>
+              <Link
+                href={`/b/${slug}/invoices?${new URLSearchParams({
+                  ...(sp.status ? { status: sp.status } : {}),
+                  page: String(Math.min(pageCount, page + 1)),
+                }).toString()}`}
+                aria-disabled={page >= pageCount}
+                className={
+                  "text-xs font-medium rounded-md border border-[var(--border-strong)] px-2.5 py-1 transition " +
+                  (page >= pageCount
+                    ? "opacity-40 pointer-events-none"
+                    : "hover:border-[var(--text-muted)] hover:bg-[var(--bg-sunken)]")
+                }
+              >
+                Next →
+              </Link>
+            </div>
+          </div>
         )}
       </div>
     </div>

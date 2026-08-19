@@ -1,24 +1,55 @@
+import Link from "next/link";
 import { getBrandBySlug } from "@/lib/brands";
 import { getBrandUtilization } from "@/lib/queries";
 import { PageHeader, Card, EmptyState } from "@/components/primitives";
 
+const RANGES: { key: string; days: number; label: string }[] = [
+  { key: "7", days: 7, label: "7d" },
+  { key: "30", days: 30, label: "30d" },
+  { key: "90", days: 90, label: "90d" },
+];
+
 export default async function UtilizationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ range?: string }>;
 }) {
   const { slug } = await params;
-  const brand = await getBrandBySlug(slug);
-  const rows = await getBrandUtilization(brand._id);
+  const { range } = await searchParams;
+  const chosen = RANGES.find((r) => r.key === range) ?? RANGES[0];
 
+  const brand = await getBrandBySlug(slug);
+  const rows = await getBrandUtilization(brand._id, chosen.days);
   const maxOpen = Math.max(1, ...rows.map((r) => r.open));
 
   return (
     <div>
       <PageHeader
         title="Team utilization"
-        subtitle={`Open, overdue, and shipped-last-7-days per assignee for ${brand.name}.`}
-      />
+        subtitle={`Open + overdue now, and shipped in the last ${chosen.days} days for ${brand.name}.`}
+      >
+        <div className="flex items-center gap-1 border border-[var(--border)] rounded-md p-0.5 bg-[var(--bg-elevated)]">
+          {RANGES.map((r) => {
+            const isActive = r.key === chosen.key;
+            return (
+              <Link
+                key={r.key}
+                href={`/b/${slug}/utilization?range=${r.key}`}
+                className={
+                  "text-xs font-semibold px-2.5 py-1 rounded transition " +
+                  (isActive
+                    ? "bg-[var(--accent)] text-[var(--accent-ink)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text)]")
+                }
+              >
+                {r.label}
+              </Link>
+            );
+          })}
+        </div>
+      </PageHeader>
       <div className="p-8">
         {rows.length === 0 ? (
           <EmptyState
@@ -33,7 +64,7 @@ export default async function UtilizationPage({
                   <Th className="w-[35%]">Member</Th>
                   <Th className="text-right">Open</Th>
                   <Th className="text-right">Overdue</Th>
-                  <Th className="text-right">Done 7d</Th>
+                  <Th className="text-right">Done {chosen.days}d</Th>
                   <Th className="w-[30%]">Load</Th>
                 </tr>
               </thead>

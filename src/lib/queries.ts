@@ -325,12 +325,13 @@ export type UtilizationRow = {
 };
 
 export async function getBrandUtilization(
-  brandId: Types.ObjectId | string
+  brandId: Types.ObjectId | string,
+  windowDays = 7
 ): Promise<UtilizationRow[]> {
   await connectDb();
   const oid = typeof brandId === "string" ? new Types.ObjectId(brandId) : brandId;
   const now = new Date();
-  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const weekAgo = new Date(now.getTime() - windowDays * 24 * 60 * 60 * 1000);
 
   const rows = await Task.aggregate([
     { $match: { brandId: oid, assignedToId: { $ne: null } } },

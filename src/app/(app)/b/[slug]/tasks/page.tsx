@@ -1,13 +1,15 @@
 import Link from "next/link";
+import { Types } from "mongoose";
 import { getBrandBySlug } from "@/lib/brands";
 import { connectDb } from "@/lib/mongoose";
 import { Task } from "@/models";
 import { PageHeader, Pill, Card, EmptyState } from "@/components/primitives";
 import { NewTaskForm } from "./new-task-form";
 import { TaskStatusMenu } from "./task-status-menu";
+import { KanbanFilters } from "./kanban-filters";
 import { listBrandMembers } from "@/lib/actions/task-actions";
 import { formatDistanceToNowStrict } from "date-fns";
-import type { TaskStatus } from "@/models/types";
+import type { TaskStatus, TaskKind, TaskPriority } from "@/models/types";
 
 const COLUMNS: { key: TaskStatus; label: string }[] = [
   { key: "todo", label: "To do" },
@@ -19,17 +21,42 @@ const COLUMNS: { key: TaskStatus; label: string }[] = [
 
 export default async function TasksPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{
+    assignee?: string;
+    kind?: string;
+    priority?: string;
+    q?: string;
+  }>;
 }) {
   const { slug } = await params;
+  const sp = await searchParams;
   const brand = await getBrandBySlug(slug);
 
   await connectDb();
+
+  // Build the filter query from URL params. Anything unrecognised falls
+  // back to "no filter" (we never trust user input to be a valid enum
+  // without checking).
+  const filter: Record<string, unknown> = {
+    brandId: brand._id,
+    status: { $ne: "cancelled" },
+  };
+  if (sp.assignee === "unassigned") {
+    filter.assignedToId = null;
+  } else if (sp.assignee && Types.ObjectId.isValid(sp.assignee)) {
+    filter.assignedToId = new Types.ObjectId(sp.assignee);
+  }
+  if (sp.kind) filter.kind = sp.kind as TaskKind;
+  if (sp.priority) filter.priority = sp.priority as TaskPriority;
+  if (sp.q && sp.q.trim()) {
+    filter.title = { $regex: escapeRegex(sp.q.trim()), $options: "i" };
+  }
+
   const [allTasks, members] = await Promise.all([
-    Task.find({ brandId: brand._id, status: { $ne: "cancelled" } })
-      .sort({ priority: -1, updatedAt: -1 })
-      .lean(),
+    Task.find(filter).sort({ priority: -1, updatedAt: -1 }).lean(),
     listBrandMembers(slug),
   ]);
 
@@ -54,6 +81,10 @@ export default async function TasksPage({
       <div className="p-6 lg:p-8 space-y-6">
         <Card>
           <NewTaskForm brandSlug={slug} members={members} />
+        </Card>
+
+        <Card>
+          <KanbanFilters members={members} />
         </Card>
 
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
@@ -129,6 +160,10 @@ function kindTone(k: string) {
     default:
       return "neutral" as const;
   }
+}
+
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function priorityTone(p: string) {
