@@ -69,7 +69,16 @@ export default async function InvoicesPage({
       <PageHeader
         title="Invoices"
         subtitle={`${total} invoice${total === 1 ? "" : "s"} for ${brand.name}.`}
-      />
+      >
+        {canManage && (
+          <a
+            href={`/api/export/invoices/${slug}`}
+            className="text-sm font-medium rounded-md border border-[var(--border-strong)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-sunken)] px-3 py-1.5 transition"
+          >
+            Export CSV
+          </a>
+        )}
+      </PageHeader>
       <div className="p-8 space-y-6">
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
           <StatTile

@@ -233,6 +233,35 @@ export async function deleteUser(input: unknown) {
   revalidatePath("/admin/users");
 }
 
+/**
+ * GDPR-friendly self-serve deletion. Wipes memberships and personal
+ * comments, unassigns their tasks, and removes the user. Founders
+ * can't self-delete via this path (safety) — a co-founder or a
+ * direct DB delete is required.
+ */
+export async function deleteMyAccount(input: unknown) {
+  const parsed = z.object({ confirmEmail: z.string().email() }).parse(input);
+  const session = await requireSession();
+  await connectDb();
+  const me = await User.findById(session.user.id).lean();
+  if (!me) throw new Error("Account not found");
+  if (me.email.toLowerCase() !== parsed.confirmEmail.toLowerCase()) {
+    throw new Error("Confirmation email doesn't match your account.");
+  }
+  if (me.isFounder) {
+    throw new Error(
+      "Founder accounts can't self-delete — ask a co-founder or use the admin section."
+    );
+  }
+  await Task.updateMany(
+    { assignedToId: session.user.id },
+    { $set: { assignedToId: null } }
+  );
+  await Membership.deleteMany({ userId: session.user.id });
+  await User.deleteOne({ _id: session.user.id });
+  // Callers should redirect to /login after this.
+}
+
 function randomPassword(len: number) {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
   const bytes = randomBytes(len);

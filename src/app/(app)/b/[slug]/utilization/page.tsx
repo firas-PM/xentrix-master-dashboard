@@ -30,6 +30,12 @@ export default async function UtilizationPage({
         title="Team utilization"
         subtitle={`Open + overdue now, and shipped in the last ${chosen.days} days for ${brand.name}.`}
       >
+        <a
+          href={`/api/export/time/${slug}`}
+          className="text-sm font-medium rounded-md border border-[var(--border-strong)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-sunken)] px-3 py-1.5 transition"
+        >
+          Export time CSV
+        </a>
         <div className="flex items-center gap-1 border border-[var(--border)] rounded-md p-0.5 bg-[var(--bg-elevated)]">
           {RANGES.map((r) => {
             const isActive = r.key === chosen.key;
