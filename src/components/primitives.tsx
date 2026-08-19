@@ -6,7 +6,7 @@ export function PageHeader({
   children,
 }: {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   return (
@@ -16,7 +16,9 @@ export function PageHeader({
           {title}
         </h1>
         {subtitle && (
-          <p className="text-sm text-[var(--text-muted)] mt-1">{subtitle}</p>
+          <div className="text-sm text-[var(--text-muted)] mt-1 flex items-center gap-2 flex-wrap">
+            {subtitle}
+          </div>
         )}
       </div>
       {children && <div className="flex items-center gap-2">{children}</div>}

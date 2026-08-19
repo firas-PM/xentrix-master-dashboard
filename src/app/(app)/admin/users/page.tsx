@@ -39,23 +39,28 @@ export default async function AdminUsersPage() {
             {users.map((u) => {
               const mems = byUser.get(String(u._id)) ?? [];
               return (
-                <Card key={String(u._id)} className="flex items-center gap-3 py-3">
-                  <div className="h-8 w-8 rounded-full bg-[var(--bg-sunken)] border border-[var(--border)] grid place-items-center text-xs uppercase font-semibold text-[var(--text-muted)]">
-                    {(u.name ?? u.email).slice(0, 2)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{u.name ?? "—"}</div>
-                    <div className="text-xs text-[var(--text-subtle)] truncate">{u.email}</div>
-                  </div>
-                  <div className="flex items-center gap-1 flex-wrap justify-end max-w-[50%]">
-                    {u.isFounder && <Pill tone="gold">Founder</Pill>}
-                    {mems.map((m, i) => (
-                      <Pill key={i}>
-                        {m.brand}: {m.role.replace("_", " ")}
-                      </Pill>
-                    ))}
-                  </div>
-                </Card>
+                <Link key={String(u._id)} href={`/admin/users/${String(u._id)}`}>
+                  <Card className="flex items-center gap-3 py-3 hover:border-[var(--border-strong)] transition">
+                    <div className="h-8 w-8 rounded-full bg-[var(--bg-sunken)] border border-[var(--border)] grid place-items-center text-xs uppercase font-semibold text-[var(--text-muted)]">
+                      {(u.name ?? u.email).slice(0, 2)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate flex items-center gap-2">
+                        {u.name ?? "—"}
+                        {u.deactivatedAt && <Pill tone="red">Deactivated</Pill>}
+                      </div>
+                      <div className="text-xs text-[var(--text-subtle)] truncate">{u.email}</div>
+                    </div>
+                    <div className="flex items-center gap-1 flex-wrap justify-end max-w-[50%]">
+                      {u.isFounder && <Pill tone="gold">Founder</Pill>}
+                      {mems.map((m, i) => (
+                        <Pill key={i}>
+                          {m.brand}: {m.role.replace("_", " ")}
+                        </Pill>
+                      ))}
+                    </div>
+                  </Card>
+                </Link>
               );
             })}
           </div>

@@ -79,6 +79,7 @@ const providers: NextAuthConfig["providers"] = [
       await connectDb();
       const user = await User.findOne({ email: parsed.data.email.toLowerCase() }).lean();
       if (!user || !user.passwordHash) return null;
+      if (user.deactivatedAt) return null;
       const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
       if (!ok) return null;
       return {

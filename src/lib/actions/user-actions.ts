@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 import { connectDb } from "@/lib/mongoose";
-import { User, Membership, Brand } from "@/models";
+import { User, Membership, Brand, Task } from "@/models";
 import { requireFounder, requireSession } from "@/lib/access";
 import { ROLES, type Role } from "@/models/types";
 
@@ -136,4 +137,106 @@ export async function removeMembership(input: unknown) {
   if (!brand) return;
   await Membership.deleteOne({ userId: parsed.userId, brandId: brand._id });
   revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${parsed.userId}`);
+}
+
+const updateUserSchema = z.object({
+  userId: z.string(),
+  name: z.string().min(1).max(120),
+  isFounder: z.boolean(),
+});
+
+export type UpdateUserResult = { ok: true } | { ok: false; error: string };
+
+export async function updateUser(input: unknown): Promise<UpdateUserResult> {
+  const parsed = updateUserSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+  const session = await requireFounder();
+
+  // Prevent a founder from demoting themselves — you'd get locked out of the
+  // admin section immediately after the JWT refresh.
+  if (
+    parsed.data.userId === session.user.id &&
+    !parsed.data.isFounder &&
+    session.user.isFounder
+  ) {
+    return { ok: false, error: "You cannot remove your own founder flag." };
+  }
+
+  await connectDb();
+  await User.updateOne(
+    { _id: parsed.data.userId },
+    { $set: { name: parsed.data.name.trim(), isFounder: parsed.data.isFounder } }
+  );
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${parsed.data.userId}`);
+  return { ok: true };
+}
+
+const resetSchema = z.object({ userId: z.string() });
+
+export type ResetPasswordResult =
+  | { ok: true; newPassword: string }
+  | { ok: false; error: string };
+
+/** Founder-only: reset a user's password to a random string and return it once. */
+export async function adminResetPassword(input: unknown): Promise<ResetPasswordResult> {
+  const parsed = resetSchema.parse(input);
+  await requireFounder();
+  await connectDb();
+  const user = await User.findById(parsed.userId).lean();
+  if (!user) return { ok: false, error: "User not found" };
+
+  const newPassword = randomPassword(16);
+  const hash = await bcrypt.hash(newPassword, 10);
+  await User.updateOne(
+    { _id: parsed.userId },
+    { $set: { passwordHash: hash }, $inc: { tokenVersion: 1 } }
+  );
+  revalidatePath(`/admin/users/${parsed.userId}`);
+  return { ok: true, newPassword };
+}
+
+export async function setUserDeactivated(input: unknown) {
+  const parsed = z
+    .object({ userId: z.string(), deactivated: z.boolean() })
+    .parse(input);
+  const session = await requireFounder();
+  if (parsed.userId === session.user.id) {
+    throw new Error("Cannot deactivate your own account here.");
+  }
+  await connectDb();
+  await User.updateOne(
+    { _id: parsed.userId },
+    { $set: { deactivatedAt: parsed.deactivated ? new Date() : null } }
+  );
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${parsed.userId}`);
+}
+
+export async function deleteUser(input: unknown) {
+  const parsed = z.object({ userId: z.string() }).parse(input);
+  const session = await requireFounder();
+  if (parsed.userId === session.user.id) {
+    throw new Error("Cannot delete your own account.");
+  }
+  await connectDb();
+  // Unassign any tasks first so we don't leave dangling references.
+  await Task.updateMany(
+    { assignedToId: parsed.userId },
+    { $set: { assignedToId: null } }
+  );
+  await Membership.deleteMany({ userId: parsed.userId });
+  await User.deleteOne({ _id: parsed.userId });
+  revalidatePath("/admin/users");
+}
+
+function randomPassword(len: number) {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const bytes = randomBytes(len);
+  let out = "";
+  for (let i = 0; i < len; i++) out += alphabet[bytes[i] % alphabet.length];
+  return out;
 }

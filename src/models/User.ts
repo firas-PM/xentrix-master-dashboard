@@ -8,6 +8,10 @@ const UserSchema = new Schema(
     image: { type: String },
     passwordHash: { type: String },
     isFounder: { type: Boolean, default: false },
+    /** When set, the user can't sign in. Sessions already issued expire on next JWT refresh. */
+    deactivatedAt: { type: Date, default: null },
+    /** Increments on password reset so magic-link and reset-token reuse is blocked. */
+    tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
