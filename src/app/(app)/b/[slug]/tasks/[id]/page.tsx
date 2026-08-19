@@ -46,6 +46,8 @@ export default async function TaskDetailPage({
         id: String(c._id),
         body: c.body,
         createdAt: c.createdAt,
+        editedAt: c.editedAt ?? null,
+        authorId: String(c.authorId),
         author: u ? { name: u.name ?? u.email, email: u.email } : null,
       };
     })
@@ -119,9 +121,16 @@ export default async function TaskDetailPage({
             <TaskComments
               brandSlug={slug}
               taskId={String(task._id)}
+              currentUserId={session.user.id}
+              isFounder={session.user.isFounder}
               comments={commentsWithAuthor.map((c) => ({
                 ...c,
-                createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString(),
+                createdAt: c.createdAt
+                  ? new Date(c.createdAt).toISOString()
+                  : new Date().toISOString(),
+                editedAt: c.editedAt
+                  ? new Date(c.editedAt).toISOString()
+                  : null,
               }))}
             />
           </Card>

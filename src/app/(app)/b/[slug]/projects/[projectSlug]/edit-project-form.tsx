@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateProject } from "@/lib/actions/project-actions";
+import { updateProject, deleteProject } from "@/lib/actions/project-actions";
 import { PROJECT_STAGES, type ProjectStage } from "@/models/types";
 
 export type EditProjectInitial = {
@@ -134,6 +134,28 @@ export function EditProjectForm({ initial }: { initial: EditProjectInitial }) {
           className="rounded-md bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50 text-[var(--accent-ink)] text-sm font-semibold px-4 py-2 transition"
         >
           {pending ? "Saving…" : "Save changes"}
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            if (
+              !confirm(
+                `Delete project "${initial.name}"? Tasks that referenced it stay put (their project link is cleared). This cannot be undone.`
+              )
+            )
+              return;
+            start(async () => {
+              await deleteProject({
+                brandSlug: initial.brandSlug,
+                projectSlug: initial.projectSlug,
+              });
+              router.push(`/b/${initial.brandSlug}/projects`);
+            });
+          }}
+          className="ml-auto text-sm font-medium rounded-md border border-[var(--danger)]/40 hover:border-[var(--danger)] hover:bg-[var(--danger)]/5 text-[var(--danger)] px-3 py-1.5 transition disabled:opacity-50"
+        >
+          Delete project
         </button>
         {msg && (
           <span

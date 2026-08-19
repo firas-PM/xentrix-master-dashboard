@@ -5,7 +5,7 @@ import { Invoice } from "@/models";
 import { PageHeader, Card, EmptyState, Pill, StatTile } from "@/components/primitives";
 import { NewInvoiceForm } from "./new-invoice-form";
 import { InvoiceRowActions } from "./invoice-row-actions";
-import type { InvoiceStatus } from "@/models/Invoice";
+import type { InvoiceStatus, InvoiceCurrency } from "@/models/Invoice";
 import { format } from "date-fns";
 
 export default async function InvoicesPage({
@@ -123,6 +123,21 @@ export default async function InvoicesPage({
                             brandSlug={slug}
                             invoiceId={String(inv._id)}
                             current={inv.status as InvoiceStatus}
+                            editable={{
+                              id: String(inv._id),
+                              number: inv.number,
+                              amountCents: inv.amountCents,
+                              currency: inv.currency as InvoiceCurrency,
+                              status: inv.status as InvoiceStatus,
+                              clientName: inv.clientName ?? "",
+                              notes: inv.notes ?? "",
+                              issuedAt: inv.issuedAt
+                                ? new Date(inv.issuedAt).toISOString().slice(0, 10)
+                                : "",
+                              dueAt: inv.dueAt
+                                ? new Date(inv.dueAt).toISOString().slice(0, 10)
+                                : "",
+                            }}
                           />
                         </div>
                       </Td>

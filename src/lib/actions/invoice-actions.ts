@@ -77,6 +77,52 @@ export async function setInvoiceStatus(input: unknown) {
   revalidatePath(`/b/${parsed.brandSlug}/invoices`);
 }
 
+const updateSchema = z.object({
+  brandSlug: z.string(),
+  invoiceId: z.string(),
+  number: z.string().min(1).max(60),
+  amountCents: z.number().int().min(0).max(1_000_000_000_00),
+  currency: z.enum(INVOICE_CURRENCIES),
+  status: z.enum(INVOICE_STATUSES),
+  clientName: z.string().max(120).optional().nullable(),
+  notes: z.string().max(1000).optional().nullable(),
+  issuedAt: z.string().optional().nullable(),
+  dueAt: z.string().optional().nullable(),
+});
+
+export async function updateInvoice(input: unknown): Promise<InvoiceResult> {
+  const parsed = updateSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+  await requireBrandAccess(parsed.data.brandSlug, "manager");
+  await connectDb();
+  const brand = await Brand.findOne({ slug: parsed.data.brandSlug }).lean();
+  if (!brand) return { ok: false, error: "Brand not found" };
+
+  const $set: Record<string, unknown> = {
+    number: parsed.data.number.trim(),
+    amountCents: parsed.data.amountCents,
+    currency: parsed.data.currency,
+    status: parsed.data.status,
+    clientName: parsed.data.clientName?.trim() || null,
+    notes: parsed.data.notes?.trim() || null,
+    issuedAt: parsed.data.issuedAt ? new Date(parsed.data.issuedAt) : null,
+    dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : null,
+    paidAt: parsed.data.status === "paid" ? new Date() : null,
+  };
+
+  await Invoice.updateOne(
+    { _id: parsed.data.invoiceId, brandId: brand._id },
+    { $set }
+  );
+  revalidatePath(`/b/${parsed.data.brandSlug}/invoices`);
+  return { ok: true };
+}
+
 export async function deleteInvoice(input: unknown) {
   const parsed = z
     .object({ brandSlug: z.string(), invoiceId: z.string() })

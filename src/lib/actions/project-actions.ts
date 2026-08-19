@@ -129,3 +129,48 @@ export async function updateProject(input: unknown): Promise<UpdateProjectResult
   revalidatePath(`/b/${parsed.data.brandSlug}`);
   return { ok: true };
 }
+
+const deleteProjectSchema = z.object({
+  brandSlug: z.string(),
+  projectSlug: z.string(),
+});
+
+export async function deleteProject(input: unknown) {
+  const parsed = deleteProjectSchema.parse(input);
+  const { session } = await requireBrandAccess(parsed.brandSlug, "manager");
+  await connectDb();
+  const brand = await Brand.findOne({ slug: parsed.brandSlug }).lean();
+  if (!brand) throw new Error("Brand not found");
+
+  const project = await Project.findOne({
+    brandId: brand._id,
+    slug: parsed.projectSlug,
+  }).lean();
+
+  // Nullify projectId on tasks that pointed here, so they aren't orphaned.
+  if (project) {
+    const { Task } = await import("@/models");
+    await Task.updateMany(
+      { projectId: project._id },
+      { $set: { projectId: null } }
+    );
+  }
+  await Project.deleteOne({
+    brandId: brand._id,
+    slug: parsed.projectSlug,
+  });
+
+  await logActivity({
+    brandId: String(brand._id),
+    actorId: session.user.id,
+    kind: "project_updated",
+    summary: `deleted project "${parsed.projectSlug}"`,
+    entityType: "project",
+    entityId: parsed.projectSlug,
+  });
+
+  updateTag(brandStatsTag);
+  updateTag(founderOverviewTag);
+  revalidatePath(`/b/${parsed.brandSlug}/projects`);
+  revalidatePath(`/b/${parsed.brandSlug}`);
+}

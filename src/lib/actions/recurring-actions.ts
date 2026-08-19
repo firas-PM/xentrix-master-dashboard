@@ -82,6 +82,62 @@ export async function setRecurringActive(input: unknown) {
   revalidatePath(`/b/${parsed.brandSlug}/recurring`);
 }
 
+const updateSchema = z.object({
+  brandSlug: z.string(),
+  templateId: z.string(),
+  title: z.string().min(1).max(300),
+  description: z.string().max(2000).optional().nullable(),
+  kind: z.enum(TASK_KINDS),
+  priority: z.enum(TASK_PRIORITIES),
+  defaultAssigneeId: z.string().optional().nullable(),
+  frequency: z.enum(RECURRENCE_FREQS),
+  daysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
+  dayOfMonth: z.number().int().min(1).max(31).optional().nullable(),
+  time: z.string().regex(timePattern, "Time must be HH:mm"),
+});
+
+export async function updateRecurring(input: unknown): Promise<RecurringResult> {
+  const parsed = updateSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+  await requireBrandAccess(parsed.data.brandSlug, "manager");
+  await connectDb();
+  const brand = await Brand.findOne({ slug: parsed.data.brandSlug }).lean();
+  if (!brand) return { ok: false, error: "Brand not found" };
+
+  await RecurringTaskTemplate.updateOne(
+    { _id: parsed.data.templateId, brandId: brand._id },
+    {
+      $set: {
+        title: parsed.data.title,
+        description: parsed.data.description || null,
+        kind: parsed.data.kind,
+        priority: parsed.data.priority,
+        defaultAssigneeId: parsed.data.defaultAssigneeId || null,
+        frequency: parsed.data.frequency,
+        schedule: {
+          daysOfWeek:
+            parsed.data.frequency === "weekly"
+              ? parsed.data.daysOfWeek ?? [1]
+              : undefined,
+          dayOfMonth:
+            parsed.data.frequency === "monthly"
+              ? parsed.data.dayOfMonth ?? 1
+              : undefined,
+          time: parsed.data.time,
+        },
+      },
+    }
+  );
+
+  revalidatePath(`/b/${parsed.data.brandSlug}/recurring`);
+  return { ok: true };
+}
+
 export async function deleteRecurring(input: unknown) {
   const parsed = z
     .object({ brandSlug: z.string(), templateId: z.string() })

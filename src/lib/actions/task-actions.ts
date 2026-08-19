@@ -267,6 +267,62 @@ async function notifyMentions(input: {
   );
 }
 
+const editCommentSchema = z.object({
+  brandSlug: z.string(),
+  commentId: z.string(),
+  taskId: z.string(),
+  body: z.string().min(1).max(10000),
+});
+
+export type EditCommentResult = { ok: true } | { ok: false; error: string };
+
+export async function editTaskComment(
+  input: unknown
+): Promise<EditCommentResult> {
+  const parsed = editCommentSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+  const { session } = await requireBrandAccess(parsed.data.brandSlug);
+  await connectDb();
+  const comment = await TaskComment.findById(parsed.data.commentId).lean();
+  if (!comment) return { ok: false, error: "Comment not found" };
+  if (
+    !session.user.isFounder &&
+    String(comment.authorId) !== String(session.user.id)
+  ) {
+    return { ok: false, error: "Only the author can edit a comment." };
+  }
+  await TaskComment.updateOne(
+    { _id: parsed.data.commentId },
+    { $set: { body: parsed.data.body, editedAt: new Date() } }
+  );
+  revalidatePath(`/b/${parsed.data.brandSlug}/tasks/${parsed.data.taskId}`);
+  return { ok: true };
+}
+
+export async function deleteTaskComment(input: unknown) {
+  const parsed = z
+    .object({
+      brandSlug: z.string(),
+      taskId: z.string(),
+      commentId: z.string(),
+    })
+    .parse(input);
+  const { session } = await requireBrandAccess(parsed.brandSlug);
+  await connectDb();
+  const comment = await TaskComment.findById(parsed.commentId).lean();
+  if (!comment) return;
+  if (
+    !session.user.isFounder &&
+    String(comment.authorId) !== String(session.user.id)
+  ) {
+    throw new Error("Only the author can delete a comment.");
+  }
+  await TaskComment.deleteOne({ _id: parsed.commentId });
+  revalidatePath(`/b/${parsed.brandSlug}/tasks/${parsed.taskId}`);
+}
+
 export async function deleteTask(input: unknown) {
   const parsed = z
     .object({ brandSlug: z.string(), taskId: z.string() })

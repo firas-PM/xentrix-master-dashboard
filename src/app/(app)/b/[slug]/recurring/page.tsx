@@ -6,6 +6,11 @@ import { listBrandMembers } from "@/lib/actions/task-actions";
 import { PageHeader, Card, EmptyState, Pill } from "@/components/primitives";
 import { NewRecurringForm } from "./new-recurring-form";
 import { RecurringRowActions } from "./recurring-row-actions";
+import type {
+  RecurrenceFreq,
+  TaskKind,
+  TaskPriority,
+} from "@/models/types";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -80,6 +85,24 @@ export default async function RecurringPage({
                         brandSlug={slug}
                         templateId={String(t._id)}
                         active={t.active}
+                        members={members}
+                        editable={{
+                          id: String(t._id),
+                          title: t.title,
+                          kind: t.kind as TaskKind,
+                          priority: t.priority as TaskPriority,
+                          defaultAssigneeId: t.defaultAssigneeId
+                            ? String(t.defaultAssigneeId)
+                            : "",
+                          frequency: t.frequency as RecurrenceFreq,
+                          time: (t.schedule as { time: string }).time,
+                          daysOfWeek:
+                            ((t.schedule as { daysOfWeek?: number[] })
+                              .daysOfWeek ?? []),
+                          dayOfMonth:
+                            (t.schedule as { dayOfMonth?: number })
+                              .dayOfMonth ?? 1,
+                        }}
                       />
                     )}
                   </div>
