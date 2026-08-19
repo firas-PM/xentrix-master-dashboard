@@ -141,4 +141,134 @@ test.describe("authenticated flow", () => {
     expect(errs.consoleErrors, "no console errors during flow").toEqual([]);
     expect(errs.failedRequests, "no failed requests during flow").toEqual([]);
   });
+
+  test("⌘⇧K quick capture creates a task, then task can be deleted", async ({
+    page,
+  }) => {
+    const errs = trackErrors(page);
+    const uniqueTitle = `Playwright smoke ${Date.now()}`;
+
+    await page.goto("/login");
+    await page.getByPlaceholder("you@xentrix.xyz").first().fill(EMAIL!);
+    await page.locator('input[name="password"]').fill(PASSWORD!);
+    await Promise.all([
+      page.waitForURL((u) => !u.pathname.startsWith("/login")),
+      page.getByRole("button", { name: /sign in/i }).click(),
+    ]);
+
+    // Establish focus on the document before dispatching the keyboard
+    // shortcut — Chromium headless can drop key events otherwise.
+    await page.locator("body").click({ position: { x: 10, y: 10 } });
+    await page.locator("body").press("Meta+k");
+    await expect(
+      page.getByPlaceholder(/search tasks, projects, brands/i)
+    ).toBeVisible();
+    // Flip to the Quick task tab
+    await page.getByRole("button", { name: /^quick task$/i }).click();
+    await expect(page.getByPlaceholder(/send follow-up/i)).toBeVisible();
+
+    await page.getByPlaceholder(/send follow-up/i).fill(uniqueTitle);
+    await Promise.all([
+      page.waitForURL(/\/b\/[^/]+\/tasks$/),
+      page.getByRole("button", { name: /add task/i }).click(),
+    ]);
+
+    // The just-created task title should be visible in the kanban
+    await expect(page.getByText(uniqueTitle).first()).toBeVisible();
+
+    // Click into it → task detail page
+    await page.getByText(uniqueTitle).first().click();
+    await page.waitForURL(/\/b\/[^/]+\/tasks\/[a-f0-9]{24}$/);
+
+    // Delete it (server action redirects back to tasks list)
+    page.once("dialog", (d) => d.accept());
+    await Promise.all([
+      page.waitForURL(/\/b\/[^/]+\/tasks$/),
+      page.getByRole("button", { name: /delete task/i }).click(),
+    ]);
+
+    // Task title should not appear on the tasks board after delete
+    await expect(page.getByText(uniqueTitle)).toHaveCount(0);
+
+    expect(errs.consoleErrors, "no console errors during CRUD").toEqual([]);
+    expect(errs.failedRequests, "no failed requests during CRUD").toEqual([]);
+  });
+
+  test("dark mode persists across a reload", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByPlaceholder("you@xentrix.xyz").first().fill(EMAIL!);
+    await page.locator('input[name="password"]').fill(PASSWORD!);
+    await Promise.all([
+      page.waitForURL((u) => !u.pathname.startsWith("/login")),
+      page.getByRole("button", { name: /sign in/i }).click(),
+    ]);
+
+    // Ensure we start in light mode
+    let attr = await page.evaluate(() =>
+      document.documentElement.getAttribute("data-theme")
+    );
+    if (attr === "dark") {
+      await page
+        .getByRole("button", { name: /switch to light theme/i })
+        .first()
+        .click();
+    }
+
+    // Flip to dark
+    await page
+      .getByRole("button", { name: /switch to dark theme/i })
+      .first()
+      .click();
+    attr = await page.evaluate(() =>
+      document.documentElement.getAttribute("data-theme")
+    );
+    expect(attr).toBe("dark");
+
+    // Reload — the inline theme-init script should apply data-theme=dark
+    // synchronously before hydration so there's no light-mode flash
+    await page.reload();
+    attr = await page.evaluate(() =>
+      document.documentElement.getAttribute("data-theme")
+    );
+    expect(attr, "dark theme should survive a page reload").toBe("dark");
+
+    // Clean up: flip back to light so the next test starts fresh
+    await page
+      .getByRole("button", { name: /switch to light theme/i })
+      .first()
+      .click();
+  });
+});
+
+test.describe("mobile viewport", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+  test.skip(!EMAIL || !PASSWORD, "TEST_EMAIL / TEST_PASSWORD env not set");
+
+  test("hamburger opens the sidebar drawer, close button dismisses it", async ({
+    page,
+  }) => {
+    await page.goto("/login");
+    await page.getByPlaceholder("you@xentrix.xyz").first().fill(EMAIL!);
+    await page.locator('input[name="password"]').fill(PASSWORD!);
+    await Promise.all([
+      page.waitForURL((u) => !u.pathname.startsWith("/login")),
+      page.getByRole("button", { name: /sign in/i }).click(),
+    ]);
+
+    // Sidebar exists in the DOM but hidden off-screen (translate-x-full)
+    const myWorkLink = page.getByRole("link", { name: /my work/i });
+    await expect(myWorkLink).not.toBeInViewport();
+
+    // Tap the mobile hamburger
+    await page.getByRole("button", { name: /open menu/i }).click();
+
+    // Drawer slides in — My work link is now visible in the viewport
+    await expect(myWorkLink).toBeInViewport();
+
+    // Tap the close button
+    await page.getByRole("button", { name: /close menu/i }).click();
+
+    // Drawer slides out again
+    await expect(myWorkLink).not.toBeInViewport();
+  });
 });
