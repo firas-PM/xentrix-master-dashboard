@@ -8,6 +8,7 @@ import { Task, Brand, Membership, TaskComment } from "@/models";
 import { requireBrandAccess } from "@/lib/access";
 import { TASK_KINDS, TASK_PRIORITIES, TASK_STATUSES } from "@/models/types";
 import { brandStatsTag, founderOverviewTag } from "@/lib/queries";
+import { logActivity } from "@/lib/activity";
 
 function bustStatsCache() {
   updateTag(brandStatsTag);
@@ -33,7 +34,7 @@ export async function createTask(input: unknown) {
   const brand = await Brand.findOne({ slug: parsed.brandSlug }).lean();
   if (!brand) throw new Error("Brand not found");
 
-  await Task.create({
+  const created = await Task.create({
     brandId: brand._id,
     title: parsed.title,
     kind: parsed.kind,
@@ -43,6 +44,16 @@ export async function createTask(input: unknown) {
     projectId: parsed.projectId || undefined,
     dueAt: parsed.dueAt ? new Date(parsed.dueAt) : undefined,
     createdById: session.user.id,
+  });
+
+  await logActivity({
+    brandId: String(brand._id),
+    actorId: session.user.id,
+    kind: "task_created",
+    summary: `created task "${parsed.title}"`,
+    entityType: "task",
+    entityId: String(created._id),
+    href: `/b/${parsed.brandSlug}/tasks/${String(created._id)}`,
   });
 
   bustStatsCache();
@@ -59,11 +70,14 @@ const updateStatusSchema = z.object({
 
 export async function updateTaskStatus(input: unknown) {
   const parsed = updateStatusSchema.parse(input);
-  await requireBrandAccess(parsed.brandSlug);
+  const { session } = await requireBrandAccess(parsed.brandSlug);
 
   await connectDb();
   const brand = await Brand.findOne({ slug: parsed.brandSlug }).lean();
   if (!brand) throw new Error("Brand not found");
+
+  const task = await Task.findOne({ _id: parsed.taskId, brandId: brand._id }).lean();
+  if (!task) throw new Error("Task not found");
 
   await Task.updateOne(
     { _id: parsed.taskId, brandId: brand._id },
@@ -74,6 +88,16 @@ export async function updateTaskStatus(input: unknown) {
       },
     }
   );
+
+  await logActivity({
+    brandId: String(brand._id),
+    actorId: session.user.id,
+    kind: "task_status_changed",
+    summary: `moved "${task.title}" → ${parsed.status.replace("_", " ")}`,
+    entityType: "task",
+    entityId: parsed.taskId,
+    href: `/b/${parsed.brandSlug}/tasks/${parsed.taskId}`,
+  });
 
   bustStatsCache();
   revalidatePath(`/b/${parsed.brandSlug}`);
@@ -94,7 +118,7 @@ const updateDetailsSchema = z.object({
 
 export async function updateTaskDetails(input: unknown) {
   const parsed = updateDetailsSchema.parse(input);
-  await requireBrandAccess(parsed.brandSlug);
+  const { session } = await requireBrandAccess(parsed.brandSlug);
   await connectDb();
   const brand = await Brand.findOne({ slug: parsed.brandSlug }).lean();
   if (!brand) throw new Error("Brand not found");
@@ -108,6 +132,15 @@ export async function updateTaskDetails(input: unknown) {
   if (parsed.dueAt !== undefined) $set.dueAt = parsed.dueAt ? new Date(parsed.dueAt) : null;
 
   await Task.updateOne({ _id: parsed.taskId, brandId: brand._id }, { $set });
+  await logActivity({
+    brandId: String(brand._id),
+    actorId: session.user.id,
+    kind: "task_updated",
+    summary: `edited "${parsed.title ?? "task"}"`,
+    entityType: "task",
+    entityId: parsed.taskId,
+    href: `/b/${parsed.brandSlug}/tasks/${parsed.taskId}`,
+  });
   bustStatsCache();
   revalidatePath(`/b/${parsed.brandSlug}/tasks/${parsed.taskId}`);
   revalidatePath(`/b/${parsed.brandSlug}/tasks`);
@@ -134,6 +167,15 @@ export async function addTaskComment(input: unknown) {
     authorId: session.user.id,
     body: parsed.body,
   });
+  await logActivity({
+    brandId: String(brand._id),
+    actorId: session.user.id,
+    kind: "task_commented",
+    summary: `commented on "${task.title}"`,
+    entityType: "task",
+    entityId: parsed.taskId,
+    href: `/b/${parsed.brandSlug}/tasks/${parsed.taskId}`,
+  });
   revalidatePath(`/b/${parsed.brandSlug}/tasks/${parsed.taskId}`);
 }
 
@@ -141,12 +183,21 @@ export async function deleteTask(input: unknown) {
   const parsed = z
     .object({ brandSlug: z.string(), taskId: z.string() })
     .parse(input);
-  await requireBrandAccess(parsed.brandSlug, "manager");
+  const { session } = await requireBrandAccess(parsed.brandSlug, "manager");
   await connectDb();
   const brand = await Brand.findOne({ slug: parsed.brandSlug }).lean();
   if (!brand) throw new Error("Brand not found");
+  const task = await Task.findOne({ _id: parsed.taskId, brandId: brand._id }).lean();
   await Task.deleteOne({ _id: parsed.taskId, brandId: brand._id });
   await TaskComment.deleteMany({ taskId: parsed.taskId });
+  await logActivity({
+    brandId: String(brand._id),
+    actorId: session.user.id,
+    kind: "task_deleted",
+    summary: `deleted "${task?.title ?? "task"}"`,
+    entityType: "task",
+    entityId: parsed.taskId,
+  });
   bustStatsCache();
   revalidatePath(`/b/${parsed.brandSlug}/tasks`);
   revalidatePath(`/b/${parsed.brandSlug}`);

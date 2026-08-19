@@ -12,6 +12,7 @@ import {
   Users,
   ListTodo,
   FolderKanban,
+  Inbox,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/lib/actions/auth-actions";
@@ -45,7 +46,10 @@ export function AppShell({ user, memberships, children }: Props) {
         </div>
 
         <nav className="p-3 flex-1 overflow-y-auto">
-          {user.isFounder && <SectionLabel>Overview</SectionLabel>}
+          <SectionLabel>You</SectionLabel>
+          <NavItem href="/my" icon={Inbox} active={pathname.startsWith("/my")}>
+            My work
+          </NavItem>
           {user.isFounder && (
             <NavItem
               href="/"
@@ -56,7 +60,7 @@ export function AppShell({ user, memberships, children }: Props) {
             </NavItem>
           )}
 
-          <SectionLabel className={user.isFounder ? "mt-4" : ""}>Brands</SectionLabel>
+          <SectionLabel className="mt-4">Brands</SectionLabel>
           {memberships.length === 0 && !user.isFounder && (
             <div className="px-3 py-2 text-xs text-[var(--text-subtle)]">
               You haven&apos;t been added to any brand yet.

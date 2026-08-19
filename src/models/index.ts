@@ -5,4 +5,5 @@ export { Project } from "./Project";
 export { Task } from "./Task";
 export { TaskComment } from "./TaskComment";
 export { RecurringTaskTemplate } from "./RecurringTaskTemplate";
+export { ActivityEvent, ACTIVITY_KINDS, type ActivityKind } from "./ActivityEvent";
 export * from "./types";

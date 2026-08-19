@@ -9,19 +9,9 @@ import { PageHeader, StatTile, Card, EmptyState } from "@/components/primitives"
 export default async function HomePage() {
   const session = await requireSession();
 
-  // Non-founders bounce to their first (or only) brand workspace.
+  // Non-founders go to their personal work list, not a specific brand.
   if (!session.user.isFounder) {
-    const first = session.user.memberships[0];
-    if (first) redirect(`/b/${first.brandSlug}`);
-    // Founderless + brandless — show a friendly holding page.
-    return (
-      <div className="p-8">
-        <PageHeader
-          title="Welcome"
-          subtitle="You haven't been added to any brand yet. Ping your brand admin."
-        />
-      </div>
-    );
+    redirect("/my");
   }
 
   await connectDb();

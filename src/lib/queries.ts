@@ -1,7 +1,7 @@
 import { Types } from "mongoose";
 import { unstable_cache } from "next/cache";
 import { connectDb } from "@/lib/mongoose";
-import { Task, Project, Brand } from "@/models";
+import { Task, Project, Brand, ActivityEvent } from "@/models";
 
 export const brandStatsTag = "brand-stats";
 export const founderOverviewTag = "founder-overview";
@@ -220,3 +220,119 @@ export const getFounderOverview = unstable_cache(
   ["founder-overview"],
   { revalidate: 20, tags: [founderOverviewTag] }
 );
+
+export type MyTasksBucket = "overdue" | "today" | "upcoming" | "someday";
+
+export type MyTaskRow = {
+  _id: string;
+  title: string;
+  status: string;
+  kind: string;
+  priority: string;
+  dueAt: Date | null;
+  brand: { slug: string; name: string; color: string };
+  bucket: MyTasksBucket;
+};
+
+const OPEN_STATUSES_MUTABLE = [
+  "todo",
+  "in_progress",
+  "in_review",
+  "blocked",
+] as const;
+
+export async function getMyOpenTasks(userId: string): Promise<MyTaskRow[]> {
+  await connectDb();
+  const now = new Date();
+  const endOfToday = new Date(now);
+  endOfToday.setHours(23, 59, 59, 999);
+  const endOfWeek = new Date(now);
+  endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+  const rows = await Task.aggregate([
+    {
+      $match: {
+        assignedToId: new Types.ObjectId(userId),
+        status: { $in: OPEN_STATUSES_MUTABLE },
+      },
+    },
+    { $sort: { dueAt: 1, priority: -1, updatedAt: -1 } },
+    { $limit: 100 },
+    {
+      $lookup: {
+        from: "brands",
+        localField: "brandId",
+        foreignField: "_id",
+        as: "brand",
+      },
+    },
+    { $unwind: "$brand" },
+    {
+      $project: {
+        _id: 1,
+        title: 1,
+        status: 1,
+        kind: 1,
+        priority: 1,
+        dueAt: 1,
+        brand: { slug: "$brand.slug", name: "$brand.name", color: "$brand.color" },
+      },
+    },
+  ]);
+
+  return rows.map((r: Record<string, unknown>) => {
+    const due = r.dueAt as Date | null;
+    const bucket: MyTasksBucket = !due
+      ? "someday"
+      : due < now
+        ? "overdue"
+        : due <= endOfToday
+          ? "today"
+          : due <= endOfWeek
+            ? "upcoming"
+            : "someday";
+    return {
+      ...(r as Omit<MyTaskRow, "_id" | "bucket">),
+      _id: String(r._id),
+      bucket,
+    };
+  });
+}
+
+export type BrandActivityRow = {
+  _id: string;
+  kind: string;
+  summary: string;
+  href: string | null;
+  createdAt: Date;
+  actor: { name: string; email: string } | null;
+};
+
+export async function getBrandActivity(
+  brandId: Types.ObjectId | string,
+  limit = 40
+): Promise<BrandActivityRow[]> {
+  await connectDb();
+  const oid = typeof brandId === "string" ? new Types.ObjectId(brandId) : brandId;
+  const rows = await ActivityEvent.find({ brandId: oid })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .populate("actorId", "name email")
+    .lean();
+  return rows.map((r) => {
+    const actor = r.actorId as unknown as {
+      name?: string;
+      email?: string;
+    } | null;
+    return {
+      _id: String(r._id),
+      kind: r.kind,
+      summary: r.summary,
+      href: r.href ?? null,
+      createdAt: r.createdAt,
+      actor: actor
+        ? { name: actor.name ?? actor.email ?? "?", email: actor.email ?? "" }
+        : null,
+    };
+  });
+}

@@ -1,5 +1,5 @@
 import { getBrandBySlug } from "@/lib/brands";
-import { getBrandLandingStats } from "@/lib/queries";
+import { getBrandLandingStats, getBrandActivity } from "@/lib/queries";
 import { PageHeader, StatTile, Card, EmptyState, Pill } from "@/components/primitives";
 import Link from "next/link";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -11,8 +11,12 @@ export default async function BrandLandingPage({
 }) {
   const { slug } = await params;
   const brand = await getBrandBySlug(slug);
+  const [stats, activity] = await Promise.all([
+    getBrandLandingStats(brand._id),
+    getBrandActivity(brand._id, 12),
+  ]);
   const { open, overdue, inReview, activeProjects, recentTasks, activeProjectDocs } =
-    await getBrandLandingStats(brand._id);
+    stats;
 
   return (
     <div>
@@ -76,6 +80,41 @@ export default async function BrandLandingPage({
                 </Card>
               ))}
             </div>
+          )}
+        </section>
+
+        <section>
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="text-xs uppercase tracking-wider font-semibold text-[var(--text-muted)]">
+              Team activity
+            </h2>
+          </div>
+          {activity.length === 0 ? (
+            <EmptyState title="Nothing has happened here yet" />
+          ) : (
+            <Card>
+              <ul className="divide-y divide-[var(--border)]">
+                {activity.map((a) => (
+                  <li key={a._id} className="py-2 first:pt-0 last:pb-0 flex items-baseline gap-3">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-sm">
+                        <span className="font-medium">{a.actor?.name ?? "System"}</span>{" "}
+                        {a.href ? (
+                          <Link href={a.href} className="hover:underline">
+                            {a.summary}
+                          </Link>
+                        ) : (
+                          <span>{a.summary}</span>
+                        )}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-[var(--text-subtle)] shrink-0">
+                      {formatDistanceToNowStrict(new Date(a.createdAt), { addSuffix: true })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
           )}
         </section>
 
