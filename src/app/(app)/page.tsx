@@ -2,9 +2,9 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireSession } from "@/lib/access";
 import { connectDb } from "@/lib/mongoose";
-import { Brand, Task, Project } from "@/models";
-import { PageHeader, StatTile, Card, Pill, EmptyState } from "@/components/primitives";
-import { Building2 } from "lucide-react";
+import { Brand } from "@/models";
+import { getFounderOverview } from "@/lib/queries";
+import { PageHeader, StatTile, Card, EmptyState } from "@/components/primitives";
 
 export default async function HomePage() {
   const session = await requireSession();
@@ -25,29 +25,25 @@ export default async function HomePage() {
   }
 
   await connectDb();
-  const [brands, openTasks, activeProjects] = await Promise.all([
+  const [brands, overview] = await Promise.all([
     Brand.find({ archivedAt: null }).sort({ name: 1 }).lean(),
-    Task.countDocuments({ status: { $in: ["todo", "in_progress", "in_review", "blocked"] } }),
-    Project.countDocuments({ archivedAt: null, stage: { $ne: "archived" } }),
+    getFounderOverview(),
   ]);
 
-  const perBrand = await Promise.all(
-    brands.map(async (b) => {
-      const [open, overdue, projects] = await Promise.all([
-        Task.countDocuments({
-          brandId: b._id,
-          status: { $in: ["todo", "in_progress", "in_review", "blocked"] },
-        }),
-        Task.countDocuments({
-          brandId: b._id,
-          status: { $in: ["todo", "in_progress", "in_review", "blocked"] },
-          dueAt: { $lt: new Date() },
-        }),
-        Project.countDocuments({ brandId: b._id, archivedAt: null }),
-      ]);
-      return { brand: b, open, overdue, projects };
-    })
+  const statsByBrandId = new Map(
+    overview.perBrand.map((r) => [r.brandId, r])
   );
+  const perBrand = brands.map((b) => {
+    const s = statsByBrandId.get(String(b._id));
+    return {
+      brand: b,
+      open: s?.open ?? 0,
+      overdue: s?.overdue ?? 0,
+      projects: s?.projects ?? 0,
+    };
+  });
+  const openTasks = overview.totals.openTasks;
+  const activeProjects = overview.totals.activeProjects;
 
   return (
     <div>

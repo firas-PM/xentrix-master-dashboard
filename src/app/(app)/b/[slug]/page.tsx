@@ -1,6 +1,5 @@
 import { getBrandBySlug } from "@/lib/brands";
-import { connectDb } from "@/lib/mongoose";
-import { Task, Project } from "@/models";
+import { getBrandLandingStats } from "@/lib/queries";
 import { PageHeader, StatTile, Card, EmptyState, Pill } from "@/components/primitives";
 import Link from "next/link";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -12,30 +11,8 @@ export default async function BrandLandingPage({
 }) {
   const { slug } = await params;
   const brand = await getBrandBySlug(slug);
-
-  await connectDb();
-  const [open, overdue, inReview, activeProjects, recentTasks, activeProjectDocs] =
-    await Promise.all([
-      Task.countDocuments({
-        brandId: brand._id,
-        status: { $in: ["todo", "in_progress", "in_review", "blocked"] },
-      }),
-      Task.countDocuments({
-        brandId: brand._id,
-        status: { $in: ["todo", "in_progress", "in_review", "blocked"] },
-        dueAt: { $lt: new Date() },
-      }),
-      Task.countDocuments({ brandId: brand._id, status: "in_review" }),
-      Project.countDocuments({ brandId: brand._id, archivedAt: null }),
-      Task.find({ brandId: brand._id })
-        .sort({ updatedAt: -1 })
-        .limit(8)
-        .lean(),
-      Project.find({ brandId: brand._id, archivedAt: null })
-        .sort({ updatedAt: -1 })
-        .limit(6)
-        .lean(),
-    ]);
+  const { open, overdue, inReview, activeProjects, recentTasks, activeProjectDocs } =
+    await getBrandLandingStats(brand._id);
 
   return (
     <div>

@@ -84,6 +84,71 @@ export function EmptyState({
   );
 }
 
+export function Skeleton({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "animate-pulse rounded-md bg-[var(--bg-sunken)]",
+        className
+      )}
+    />
+  );
+}
+
+export function PageSkeleton({
+  title,
+  showStats = true,
+  rows = 4,
+}: {
+  title?: string;
+  showStats?: boolean;
+  rows?: number;
+}) {
+  return (
+    <div>
+      <div className="flex items-start justify-between gap-4 px-8 pt-8 pb-6 border-b border-[var(--border)] bg-[var(--bg-elevated)]">
+        <div className="space-y-2">
+          {title ? (
+            <h1 className="text-3xl font-black tracking-tight text-[var(--text)]">
+              {title}
+            </h1>
+          ) : (
+            <Skeleton className="h-8 w-56" />
+          )}
+          <Skeleton className="h-4 w-72" />
+        </div>
+      </div>
+      <div className="p-8 space-y-6">
+        {showStats && (
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] p-5 space-y-3"
+              >
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-10 w-16" />
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="space-y-2">
+          {Array.from({ length: rows }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] p-4 flex items-center gap-3"
+            >
+              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-4 flex-1" />
+              <Skeleton className="h-5 w-14 rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Pill({
   children,
   tone = "neutral",

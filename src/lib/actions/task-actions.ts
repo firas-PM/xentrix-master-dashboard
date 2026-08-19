@@ -1,12 +1,18 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { connectDb } from "@/lib/mongoose";
 import { Task, Brand, Membership, TaskComment } from "@/models";
 import { requireBrandAccess } from "@/lib/access";
 import { TASK_KINDS, TASK_PRIORITIES, TASK_STATUSES } from "@/models/types";
+import { brandStatsTag, founderOverviewTag } from "@/lib/queries";
+
+function bustStatsCache() {
+  updateTag(brandStatsTag);
+  updateTag(founderOverviewTag);
+}
 
 const createSchema = z.object({
   brandSlug: z.string(),
@@ -39,6 +45,7 @@ export async function createTask(input: unknown) {
     createdById: session.user.id,
   });
 
+  bustStatsCache();
   revalidatePath(`/b/${parsed.brandSlug}`);
   revalidatePath(`/b/${parsed.brandSlug}/tasks`);
   revalidatePath("/");
@@ -68,6 +75,7 @@ export async function updateTaskStatus(input: unknown) {
     }
   );
 
+  bustStatsCache();
   revalidatePath(`/b/${parsed.brandSlug}`);
   revalidatePath(`/b/${parsed.brandSlug}/tasks`);
   revalidatePath("/");
@@ -100,6 +108,7 @@ export async function updateTaskDetails(input: unknown) {
   if (parsed.dueAt !== undefined) $set.dueAt = parsed.dueAt ? new Date(parsed.dueAt) : null;
 
   await Task.updateOne({ _id: parsed.taskId, brandId: brand._id }, { $set });
+  bustStatsCache();
   revalidatePath(`/b/${parsed.brandSlug}/tasks/${parsed.taskId}`);
   revalidatePath(`/b/${parsed.brandSlug}/tasks`);
   revalidatePath(`/b/${parsed.brandSlug}`);
@@ -138,6 +147,7 @@ export async function deleteTask(input: unknown) {
   if (!brand) throw new Error("Brand not found");
   await Task.deleteOne({ _id: parsed.taskId, brandId: brand._id });
   await TaskComment.deleteMany({ taskId: parsed.taskId });
+  bustStatsCache();
   revalidatePath(`/b/${parsed.brandSlug}/tasks`);
   revalidatePath(`/b/${parsed.brandSlug}`);
   redirect(`/b/${parsed.brandSlug}/tasks`);
