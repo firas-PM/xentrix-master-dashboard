@@ -4,11 +4,12 @@ import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { connectDb } from "@/lib/mongoose";
-import { Task, Brand, Membership, TaskComment } from "@/models";
+import { Task, Brand, Membership, TaskComment, User } from "@/models";
 import { requireBrandAccess } from "@/lib/access";
 import { TASK_KINDS, TASK_PRIORITIES, TASK_STATUSES } from "@/models/types";
 import { brandStatsTag, founderOverviewTag } from "@/lib/queries";
 import { logActivity } from "@/lib/activity";
+import { mentionEmail, sendEmailViaResend } from "@/lib/email";
 
 function bustStatsCache() {
   updateTag(brandStatsTag);
@@ -105,6 +106,11 @@ export async function updateTaskStatus(input: unknown) {
   revalidatePath("/");
 }
 
+const linkSchema = z.object({
+  label: z.string().min(1).max(120),
+  url: z.string().url("Must be a valid URL"),
+});
+
 const updateDetailsSchema = z.object({
   brandSlug: z.string(),
   taskId: z.string(),
@@ -114,6 +120,7 @@ const updateDetailsSchema = z.object({
   priority: z.enum(TASK_PRIORITIES).optional(),
   assignedToId: z.string().optional().nullable(),
   dueAt: z.string().optional().nullable(),
+  links: z.array(linkSchema).max(20).optional(),
 });
 
 export async function updateTaskDetails(input: unknown) {
@@ -130,6 +137,7 @@ export async function updateTaskDetails(input: unknown) {
   if (parsed.priority !== undefined) $set.priority = parsed.priority;
   if (parsed.assignedToId !== undefined) $set.assignedToId = parsed.assignedToId || null;
   if (parsed.dueAt !== undefined) $set.dueAt = parsed.dueAt ? new Date(parsed.dueAt) : null;
+  if (parsed.links !== undefined) $set.links = parsed.links;
 
   await Task.updateOne({ _id: parsed.taskId, brandId: brand._id }, { $set });
   await logActivity({
@@ -176,7 +184,87 @@ export async function addTaskComment(input: unknown) {
     entityId: parsed.taskId,
     href: `/b/${parsed.brandSlug}/tasks/${parsed.taskId}`,
   });
+
+  // Fire-and-forget @mention notifications.
+  notifyMentions({
+    body: parsed.body,
+    brandId: brand._id,
+    brandName: brand.name,
+    brandSlug: parsed.brandSlug,
+    taskId: parsed.taskId,
+    taskTitle: task.title,
+    actorName: session.user.name ?? session.user.email ?? "Someone",
+    actorId: session.user.id,
+  }).catch(() => {
+    /* email failures must not break comment posting */
+  });
+
   revalidatePath(`/b/${parsed.brandSlug}/tasks/${parsed.taskId}`);
+}
+
+/** Parse @first-last / @first tokens and email matching brand members. */
+async function notifyMentions(input: {
+  body: string;
+  brandId: unknown;
+  brandName: string;
+  brandSlug: string;
+  taskId: string;
+  taskTitle: string;
+  actorName: string;
+  actorId: string;
+}) {
+  if (!process.env.RESEND_API_KEY) return;
+  const tokens = Array.from(input.body.matchAll(/@([a-zA-Z][\w-]{1,40})/g)).map(
+    (m) => m[1].toLowerCase()
+  );
+  if (tokens.length === 0) return;
+
+  const memberships = await Membership.find({ brandId: input.brandId })
+    .populate("userId")
+    .lean();
+
+  const uniqueMatches = new Map<string, { email: string; name: string }>();
+  for (const m of memberships) {
+    const u = m.userId as unknown as {
+      _id: { toString(): string };
+      name?: string;
+      email: string;
+    } | null;
+    if (!u) continue;
+    if (String(u._id) === input.actorId) continue;
+    const nameSlug = (u.name ?? u.email.split("@")[0])
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+    const emailLocal = u.email.split("@")[0].toLowerCase();
+    if (tokens.includes(nameSlug) || tokens.includes(emailLocal)) {
+      uniqueMatches.set(u.email, {
+        email: u.email,
+        name: u.name ?? u.email,
+      });
+    }
+  }
+  if (uniqueMatches.size === 0) return;
+
+  const base = process.env.NEXTAUTH_URL ?? "https://xentrix-master-dashboard.vercel.app";
+  const url = `${base}/b/${input.brandSlug}/tasks/${input.taskId}`;
+  const from = process.env.RESEND_FROM ?? "Xentrix <no-reply@xentrix.xyz>";
+
+  await Promise.all(
+    [...uniqueMatches.values()].map((m) =>
+      sendEmailViaResend({
+        from,
+        to: m.email,
+        ...mentionEmail({
+          toName: m.name,
+          fromName: input.actorName,
+          brandName: input.brandName,
+          taskTitle: input.taskTitle,
+          commentBody: input.body,
+          url,
+        }),
+      })
+    )
+  );
 }
 
 export async function deleteTask(input: unknown) {

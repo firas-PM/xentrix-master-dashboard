@@ -6,6 +6,8 @@ import { TASK_KINDS, TASK_PRIORITIES, type TaskKind, type TaskPriority } from "@
 
 type Member = { id: string; name: string; email: string };
 
+type TaskLink = { label: string; url: string };
+
 type Task = {
   id: string;
   title: string;
@@ -14,6 +16,7 @@ type Task = {
   priority: string;
   assignedToId: string;
   dueAt: string;
+  links: TaskLink[];
 };
 
 export function TaskDetailForm({
@@ -31,6 +34,7 @@ export function TaskDetailForm({
   const [priority, setPriority] = useState<TaskPriority>(task.priority as TaskPriority);
   const [assignedToId, setAssignedToId] = useState<string>(task.assignedToId);
   const [dueAt, setDueAt] = useState<string>(task.dueAt);
+  const [links, setLinks] = useState<TaskLink[]>(task.links);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -50,6 +54,7 @@ export function TaskDetailForm({
             priority,
             assignedToId: assignedToId || null,
             dueAt: dueAt || null,
+            links: links.filter((l) => l.label.trim() && l.url.trim()),
           });
           setMsg("Saved.");
         });
@@ -105,6 +110,67 @@ export function TaskDetailForm({
             className="w-full rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
           />
         </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)]">
+            Links
+          </span>
+          <button
+            type="button"
+            onClick={() => setLinks((prev) => [...prev, { label: "", url: "" }])}
+            className="text-xs rounded-md border border-[var(--border-strong)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-sunken)] font-medium px-2 py-1 transition"
+          >
+            + Add link
+          </button>
+        </div>
+        {links.length === 0 ? (
+          <p className="text-xs text-[var(--text-subtle)]">
+            Figma, GitHub, Google Doc, spec — anything worth clicking to.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {links.map((l, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  value={l.label}
+                  onChange={(e) =>
+                    setLinks((prev) =>
+                      prev.map((x, idx) =>
+                        idx === i ? { ...x, label: e.target.value } : x
+                      )
+                    )
+                  }
+                  placeholder="Label"
+                  className="w-40 rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                />
+                <input
+                  value={l.url}
+                  onChange={(e) =>
+                    setLinks((prev) =>
+                      prev.map((x, idx) =>
+                        idx === i ? { ...x, url: e.target.value } : x
+                      )
+                    )
+                  }
+                  placeholder="https://…"
+                  className="flex-1 rounded-md bg-[var(--bg-elevated)] border border-[var(--border-strong)] px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLinks((prev) => prev.filter((_, idx) => idx !== i))
+                  }
+                  aria-label="Remove link"
+                  className="text-[var(--text-muted)] hover:text-[var(--danger)] text-sm px-2 transition"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-3 pt-2">

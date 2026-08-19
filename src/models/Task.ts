@@ -16,6 +16,17 @@ const TaskSchema = new Schema(
     dueAt: { type: Date, default: null, index: true },
     completedAt: { type: Date, default: null },
     estimateMinutes: { type: Number },
+    /** External links attached to the task (Figma, GitHub, Google Doc, etc.) */
+    links: {
+      type: [
+        {
+          label: { type: String, required: true },
+          url: { type: String, required: true },
+          _id: false,
+        },
+      ],
+      default: [],
+    },
     metadata: { type: Schema.Types.Mixed },
     recurringTemplateId: { type: Schema.Types.ObjectId, ref: "RecurringTaskTemplate", default: null },
   },

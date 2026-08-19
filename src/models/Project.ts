@@ -13,6 +13,8 @@ const ProjectSchema = new Schema(
     dueDate: { type: Date },
     liveUrl: { type: String },
     repoUrl: { type: String },
+    /** Long-form brief / SOW — what are we doing, why, and for whom. */
+    brief: { type: String, default: null },
     leadUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     archivedAt: { type: Date, default: null },
   },

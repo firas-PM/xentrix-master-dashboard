@@ -68,6 +68,9 @@ export default async function TaskDetailPage({
                 priority: task.priority,
                 assignedToId: task.assignedToId ? String(task.assignedToId) : "",
                 dueAt: dueLocalValue,
+                links: Array.isArray(task.links)
+                  ? task.links.map((l) => ({ label: l.label, url: l.url }))
+                  : [],
               }}
               members={members}
             />
